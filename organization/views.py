@@ -12,14 +12,39 @@ from application.models import Application
 from util.visibility import VisibilityType
 from util.choice import ChoiceField
 
-def check_org_permission(org_name, user, role=None):
+def check_org_view_permission(org_name, user):
+    if user.is_authenticated:
+        allow_visibility = [VisibilityType.Public, VisibilityType.Internal]
+        q1 = Q(org__visibility__in=allow_visibility)
+        q2 = Q(user=user)
+        q3 = Q(org__name=org_name)
+        q = (q1 | q2) & q3
+    else:
+        allow_visibility = [VisibilityType.Public, VisibilityType.Internal]
+        q1 = Q(org__visibility__in=allow_visibility)
+        q3 = Q(org__name=org_name)
+        q = q1 & q3
+
     try:
+        return OrganizationUser.objects.get(q)
+    except OrganizationUser.DoesNotExist:
+        raise Http404
+
+
+def check_org_admin_permission(org_name, user):
+    try:
+        admin_role = OrganizationUser.OrganizationUserRole.Admin
         user_org = OrganizationUser.objects.get(org__name=org_name, user=user)
-        if role is not None and user_org.role != role:
+        if user_org.role != admin_role:
             raise PermissionDenied
         return user_org
     except OrganizationUser.DoesNotExist:
-        raise Http404
+        try:
+            allow_visibility = [VisibilityType.Public, VisibilityType.Internal]
+            Organization.objects.get(name=org_name, visibility__in=allow_visibility)
+            raise PermissionDenied
+        except Organization.DoesNotExist:
+            raise Http404
 
 class OrganizationList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -77,8 +102,7 @@ class OrganizationDetail(APIView):
             raise Http404
 
     def put(self, request, org_name):
-        admin_role = OrganizationUser.OrganizationUserRole.Admin
-        user_org = check_org_permission(org_name, request.user, admin_role)
+        user_org = check_org_admin_permission(org_name, request.user)
         serializer = OrganizationSerializer(user_org.org, data=request.data, partial=True, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -93,8 +117,7 @@ class OrganizationDetail(APIView):
         return Response(data)
 
     def delete(self, request, org_name):
-        admin_role = OrganizationUser.OrganizationUserRole.Admin
-        user_org = check_org_permission(org_name, request.user, admin_role)
+        user_org = check_org_admin_permission(org_name, request.user)
         # todo: check users, delete related object
         user_org.org.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -103,8 +126,7 @@ class OrganizationIcon(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, org_name):
-        admin_role = OrganizationUser.OrganizationUserRole.Admin
-        user_org = check_org_permission(org_name, request.user, admin_role)
+        user_org = check_org_admin_permission(org_name, request.user)
         serializer = OrganizationIconSerializer(user_org.org, data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -115,15 +137,14 @@ class OrganizationIcon(APIView):
         return Response(data)
 
     def delete(self, request, org_name):
-        admin_role = OrganizationUser.OrganizationUserRole.Admin
-        user_org = check_org_permission(org_name, request.user, admin_role)
+        user_org = check_org_admin_permission(org_name, request.user)
         user_org.org.icon_file.storage.delete(user_org.org.icon_file.name)
         user_org.org.icon_file = None
         user_org.org.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class OrganizationUserList(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request, org_name):
         users = OrganizationUser.objects.filter(org__name=org_name, user=request.user).prefetch_related('user').order_by('-updated_at')
@@ -131,8 +152,7 @@ class OrganizationUserList(APIView):
         return Response(serializer.data)
 
     def post(self, request, org_name):
-        admin_role = OrganizationUser.OrganizationUserRole.Admin
-        user_org = check_org_permission(org_name, request.user, admin_role)
+        user_org = check_org_admin_permission(org_name, request.user)
         serializer = OrganizationUserAddSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -152,7 +172,7 @@ class OrganizationUserList(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class OrganizationUserDetail(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_object(self, org_name, username):
         try:
@@ -161,14 +181,14 @@ class OrganizationUserDetail(APIView):
             raise Http404
 
     def get(self, request, org_name, username):
-        check_org_permission(org_name, request.user)
+        check_org_view_permission(org_name, request.user)
         org_user = self.get_object(org_name, username)
         serializer = OrganizationUserSerializer(org_user)
         return Response(serializer.data)
 
     def put(self, request, org_name, username):
         admin_role = OrganizationUser.OrganizationUserRole.Admin
-        check_org_permission(org_name, request.user, admin_role)
+        check_org_admin_permission(org_name, request.user)
         org_user = self.get_object(org_name, username)
         serializer = OrganizationUserSerializer(org_user, data=request.data)
         if not serializer.is_valid():
@@ -184,7 +204,7 @@ class OrganizationUserDetail(APIView):
 
     def delete(self, request, org_name, username):
         admin_role = OrganizationUser.OrganizationUserRole.Admin
-        check_org_permission(org_name, request.user, admin_role)
+        check_org_admin_permission(org_name, request.user)
         org_user = self.get_object(org_name, username)
 
         if request.user.username == username:
@@ -196,17 +216,16 @@ class OrganizationUserDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class OrgApplicationList(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request, org_name):
-        check_org_permission(org_name, request.user)
+        check_org_view_permission(org_name, request.user)
         apps = Application.objects.filter(org__name=org_name).order_by('-updated_at')
         serializer = OrgApplicationSerializer(apps, many=True, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request, org_name):
-        admin_role = OrganizationUser.OrganizationUserRole.Admin
-        user_org = check_org_permission(org_name, request.user, admin_role)
+        user_org = check_org_admin_permission(org_name, request.user)
         serializer = OrgApplicationSerializer(data=request.data, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -214,7 +233,7 @@ class OrgApplicationList(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class OrgApplicationDetail(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_object(self, org, app_name):
         try:
@@ -223,14 +242,13 @@ class OrgApplicationDetail(APIView):
             raise Http404
 
     def get(self, request, org_name, app_name):
-        user_org = check_org_permission(org_name, request.user)
+        user_org = check_org_view_permission(org_name, request.user)
         app = self.get_object(user_org.org, app_name)
         serializer = OrgApplicationSerializer(app, context={'request': request})
         return Response(serializer.data)
 
     def put(self, request, org_name, app_name):
-        admin_role = OrganizationUser.OrganizationUserRole.Admin
-        user_org = check_org_permission(org_name, request.user, admin_role)
+        user_org = check_org_admin_permission(org_name, request.user)
         app = self.get_object(user_org.org, app_name)
         serializer = OrgApplicationSerializer(app, data=request.data, partial=True, context={'request': request})
         if not serializer.is_valid():
@@ -240,8 +258,7 @@ class OrgApplicationDetail(APIView):
         return Response(serializer.data)
 
     def delete(self, request, org_name, app_name):
-        admin_role = OrganizationUser.OrganizationUserRole.Admin
-        user_org = check_org_permission(org_name, request.user, admin_role)
+        user_org = check_org_admin_permission(org_name, request.user)
         app = self.get_object(user_org.org, app_name)
         # todo: check users, delete related object
         app.delete()

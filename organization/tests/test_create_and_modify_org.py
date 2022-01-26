@@ -1,5 +1,7 @@
+import tempfile
 from django.test import TestCase
 from util.tests.client import ApiClient, UnitTestClient
+
 class OrganizationCreateTest(TestCase):
 
     def setUp(self):
@@ -220,6 +222,13 @@ class OrganizationCreateTest(TestCase):
         self.assertEqual(r3.status_code, 200)
         self.assertNotEqual(r3.json()['icon_file'], r2.json()['icon_file'])
         self.assertNotEqual(r3.json()['icon_file'], '')
+
+        file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        file.write(b'hello')
+        file_path = file.name
+        r4 = self.client.org.change_or_set_icon(name, file_path)
+        self.assertEqual(r4.status_code, 400)
+
 
     def test_delete_icon(self):
         org = self.generate_org()

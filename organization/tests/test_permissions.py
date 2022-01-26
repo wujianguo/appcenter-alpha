@@ -97,5 +97,28 @@ class OrganizationPermissionTest(TestCase):
         r6 = anonymous_user.org.get_list()
         self.assertEqual(len(r6.json()), 1)
 
+    def test_anonymous_can_not_modify_org(self):
+        org = self.generate_org('Public')
+        r1 = self.client.org.create(org)
+        self.assertEqual(r1.status_code, 201)
+
+        r2 = self.client.org.get_one(org['name'])
+        self.assertDictEqual(r1.json(), r2.json())
+
+        internal_user = ApiClient(UnitTestClient('/api/', 'jack'))
+        r3 = internal_user.org.get_one(org['name'])
+        self.assertEqual(r3.status_code, 200)
+        r4 = internal_user.org.get_list()
+        self.assertEqual(len(r4.json()), 1)
+        r5 = internal_user.org.modify(org['name'], {'visibility': 'Private'})
+        self.assertEqual(r5.status_code, 403)
+        r6 = internal_user.org.modify(org['name'] + 'xyz', {'visibility': 'Private'})
+        self.assertEqual(r6.status_code, 404)
+
+        anonymous_user = ApiClient(UnitTestClient('/api/'))
+        r7 = anonymous_user.org.modify(org['name'], {'visibility': 'Private'})
+        self.assertEqual(r7.status_code, 403)
+
+
     def test_admin_has_all_permissions(self):
         pass
