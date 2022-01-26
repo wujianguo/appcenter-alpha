@@ -2,3 +2,5 @@ Django>=4.0,<5.0
 djangorestframework
 Pillow
 androguard
+requests
+coverage
