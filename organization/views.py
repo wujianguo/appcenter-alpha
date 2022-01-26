@@ -159,12 +159,8 @@ class OrganizationUserList(APIView):
         username = serializer.validated_data['username']
         role = serializer.validated_data['role']
         try:
-            org_user = OrganizationUser.objects.get(org__name=org_name, user__username=username)
-            if org_user.role != role:
-                org_user.role = role
-                org_user.save()
-            serializer = OrganizationUserSerializer(org_user)
-            return Response(serializer.data)
+            OrganizationUser.objects.get(org__name=org_name, user__username=username)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except OrganizationUser.DoesNotExist:
             user = User.objects.get(username=username)
             instance = OrganizationUser.objects.create(org=user_org.org, role=role, user=user)
@@ -193,7 +189,6 @@ class OrganizationUserDetail(APIView):
         serializer = OrganizationUserSerializer(org_user, data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        # print(serializer.validated_data)
         if request.user.username == username:
             if serializer.validated_data.get('role', admin_role) != admin_role:
                 exists = OrganizationUser.objects.filter(org__name=org_name, role=admin_role).exclude(user=request.user).exists()
