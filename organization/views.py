@@ -15,15 +15,14 @@ from util.choice import ChoiceField
 def check_org_view_permission(org_name, user):
     if user.is_authenticated:
         allow_visibility = [VisibilityType.Public, VisibilityType.Internal]
-        q1 = Q(org__visibility__in=allow_visibility)
-        q2 = Q(user=user)
-        q3 = Q(org__name=org_name)
-        q = (q1 | q2) & q3
+        q1 = Q(org__name=org_name)
+        q2 = Q(org__visibility__in=allow_visibility)
+        q3 = Q(user=user)
+        q = (q2 | q3) & q1
     else:
-        allow_visibility = [VisibilityType.Public, VisibilityType.Internal]
-        q1 = Q(org__visibility__in=allow_visibility)
-        q3 = Q(org__name=org_name)
-        q = q1 & q3
+        q1 = Q(org__name=org_name)
+        q2 = Q(org__visibility=VisibilityType.Public)
+        q = q1 & q2
 
     try:
         return OrganizationUser.objects.get(q)
@@ -147,7 +146,8 @@ class OrganizationUserList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request, org_name):
-        users = OrganizationUser.objects.filter(org__name=org_name, user=request.user).prefetch_related('user').order_by('-updated_at')
+        check_org_view_permission(org_name, request.user)
+        users = OrganizationUser.objects.filter(org__name=org_name)
         serializer = OrganizationUserSerializer(users, many=True)
         return Response(serializer.data)
 

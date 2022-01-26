@@ -99,6 +99,9 @@ class ApiClient:
         def get_member(self, name, username):
             return self.client.get('orgs/' + name + '/people/collaborators/' + username)
 
+        def get_member_list(self, name):
+            return self.client.get('orgs/' + name + '/people/collaborators')
+
         def change_member_role(self, name, collaborator, role):
             data = {
                 'role': role
