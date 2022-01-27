@@ -1,7 +1,7 @@
-from django.test import TestCase
 from util.tests.client import ApiClient, UnitTestClient
+from util.tests.case import BaseTestCase
 
-class OrganizationListTest(TestCase):
+class OrganizationListTest(BaseTestCase):
 
     def setUp(self):
         self.client: ApiClient = ApiClient(UnitTestClient('/api/', 'admin'))
@@ -18,17 +18,17 @@ class OrganizationListTest(TestCase):
 
     def test_empty_orgs(self):
         r = self.client.org.get_list()
-        self.assertEqual(r.status_code, 200)
+        self.assert_status_200(r)
         self.assertEqual(r.json(), [])
 
     def test_less_than_one_page(self):
         for i in range(6):
             org = self.generate_org()
             r = self.client.org.create(org)
-            self.assertEqual(r.status_code, 201)
+            self.assert_status_201(r)
         r1 = self.client.org.get_list()
-        self.assertEqual(r1.status_code, 200)
-        self.assertEqual(len(r1.json()), 6)
+        self.assert_status_200(r1)
+        self.assert_list_length(r1, 6)
 
     def test_more_than_one_page(self):
         pass

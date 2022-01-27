@@ -111,6 +111,39 @@ class ApiClient:
         def remove_member(self, name, collaborator):
             return self.client.delete('orgs/' + name + '/people/collaborators/' + collaborator)
     
+        def create_app(self, name, app):
+            return self.client.post('orgs/' + name + '/apps', app)
+
+        def get_app(self, name, app_name):
+            return self.client.get('orgs/' + name + '/apps/' + app_name)
+        
+        def get_app_list(self, name):
+            return self.client.get('orgs/' + name + '/apps')
+
+        def modify_app(self, name, app_name, app):
+            return self.client.put('orgs/' + name + '/apps/' + app_name, app)
+
+        def delete_app(self, name, app_name):
+            return self.client.delete('orgs/' + name + '/apps/' + app_name)
+
+        def change_or_set_app_icon(self, name, app_name, icon_file_path=None):
+            
+            if icon_file_path is None:
+                image = PIL.Image.new('RGB', size=(1, 1))
+                file = tempfile.NamedTemporaryFile(suffix='.jpg')
+                image.save(file)
+                file_path = file.name
+            else:
+                file_path = icon_file_path
+
+            with open(file_path, 'rb') as fp:
+                data = {'icon_file': fp}
+                return self.client.upload_post('orgs/' + name + '/apps/' + app_name + '/icon', data=data)
+
+        def delete_app_icon(self, name, app_name):
+            return self.client.delete('orgs/' + name + '/apps/' + app_name + '/icon')
+
+
     def __init__(self, client):
         self._org = ApiClient.OrganizationClient(client)
 

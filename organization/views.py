@@ -215,7 +215,7 @@ class OrgApplicationList(APIView):
 
     def get(self, request, org_name):
         check_org_view_permission(org_name, request.user)
-        apps = Application.objects.filter(org__name=org_name).order_by('-updated_at')
+        apps = Application.objects.filter(org__name=org_name)
         serializer = OrgApplicationSerializer(apps, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -223,6 +223,8 @@ class OrgApplicationList(APIView):
         user_org = check_org_admin_permission(org_name, request.user)
         serializer = OrgApplicationSerializer(data=request.data, context={'request': request})
         if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if Application.objects.filter(name=serializer.validated_data['name'], org=user_org.org).exists():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save(org=user_org.org)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

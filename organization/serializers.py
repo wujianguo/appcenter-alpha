@@ -65,8 +65,8 @@ class OrganizationUserAddSerializer(serializers.Serializer):
         fields = ['role', 'username']
 
 class OrgApplicationSerializer(serializers.ModelSerializer):    
-    display_name = serializers.CharField(help_text='A short text describing the application')
-    name = serializers.SlugField()
+    display_name = serializers.CharField(max_length=128, help_text='A short text describing the application')
+    name = serializers.SlugField(max_length=32)
     description = serializers.CharField(required=False, max_length=1024, help_text='A short text describing the application')
     release_type = ChoiceField(choices=Application.ReleaseType.choices)
     os = ChoiceField(choices=Application.OperatingSystem.choices, help_text='The OS the app will be running on')
