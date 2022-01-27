@@ -8,5 +8,6 @@ urlpatterns = [
     path('<str:org_name>/people/collaborators', views.OrganizationUserList.as_view()),
     path('<str:org_name>/people/collaborators/<str:username>', views.OrganizationUserDetail.as_view()),
     path('<str:org_name>/apps', views.OrgApplicationList.as_view()),
+    path('<str:org_name>/apps/<str:app_name>/icon', views.OrgApplicationIcon.as_view()),
     path('<str:org_name>/apps/<str:app_name>', views.OrgApplicationDetail.as_view()),
 ]

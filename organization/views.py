@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from organization.models import OrganizationUser, Organization
 from organization.serializers import *
 from application.models import Application
+from application.serializers import ApplicationIconSerializer
 from util.visibility import VisibilityType
 from util.choice import ChoiceField
 
@@ -55,6 +56,9 @@ class OrganizationList(APIView):
             q2 = Q(user=request.user)
             # # todo： an app has multi member
             orgs = OrganizationUser.objects.filter(q1 | q2).prefetch_related('org')
+            # print('=======')
+            # for org in orgs:
+            #     print('{0}: {1}'.format(org.user.username, org.org.name))
             serializer = UserOrganizationSerializer(orgs, many=True, context={'request': request})
         else:
             orgs = Organization.objects.filter(visibility=VisibilityType.Public)
@@ -162,7 +166,10 @@ class OrganizationUserList(APIView):
             OrganizationUser.objects.get(org__name=org_name, user__username=username)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except OrganizationUser.DoesNotExist:
-            user = User.objects.get(username=username)
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             instance = OrganizationUser.objects.create(org=user_org.org, role=role, user=user)
             serializer = OrganizationUserSerializer(instance)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -232,7 +239,7 @@ class OrgApplicationList(APIView):
 class OrgApplicationDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    def get_object(self, org, app_name):
+    def get_object(self, org, app_name, for_update=False):
         try:
             return Application.objects.get(org=org, name=app_name)
         except Application.DoesNotExist:
@@ -250,6 +257,11 @@ class OrgApplicationDetail(APIView):
         serializer = OrgApplicationSerializer(app, data=request.data, partial=True, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        if serializer.validated_data.get('name', None) and app_name != serializer.validated_data['name']:
+            if Application.objects.filter(org=user_org.org, name=serializer.validated_data['name']).exists():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         # todo: transfer app to another org or user
         serializer.save()
         return Response(serializer.data)
@@ -259,4 +271,33 @@ class OrgApplicationDetail(APIView):
         app = self.get_object(user_org.org, app_name)
         # todo: check users, delete related object
         app.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class OrgApplicationIcon(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, org, app_name, for_update=False):
+        try:
+            return Application.objects.get(org=org, name=app_name)
+        except Application.DoesNotExist:
+            raise Http404
+
+    def post(self, request, org_name, app_name):
+        user_org = check_org_admin_permission(org_name, request.user)
+        app = self.get_object(user_org.org, app_name, True)
+        serializer = ApplicationIconSerializer(app, data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        instance = serializer.save()
+        data = {
+            'icon_file': request.build_absolute_uri(instance.icon_file.url)
+        }
+        return Response(data)
+
+    def delete(self, request, org_name, app_name):
+        user_org = check_org_admin_permission(org_name, request.user)
+        app = self.get_object(user_org.org, app_name, True)
+        app.icon_file.storage.delete(app.icon_file.name)
+        app.icon_file = None
+        app.save()
         return Response(status=status.HTTP_204_NO_CONTENT)

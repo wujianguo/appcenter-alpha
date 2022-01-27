@@ -36,6 +36,9 @@ class OrganizationMemberTest(BaseTestCase):
         member = {'username': 'jack', 'role': 'xyz'}
         r = self.client.org.add_member(name, member)
         self.assert_status_400(r)
+        member = {'username': 'jackxxx', 'role': 'Collaborator'}
+        r = self.client.org.add_member(name, member)
+        self.assert_status_400(r)
         member = {'username': 'jack', 'role': 'Collaborator'}
         r4 = self.client.org.add_member(name, member)
         self.assert_status_201(r4)
@@ -160,9 +163,20 @@ class OrganizationMemberTest(BaseTestCase):
         r = anonymous_user.org.get_list()
         self.assert_list_length(r, 2)
 
+        paul2: ApiClient = ApiClient(UnitTestClient('/api/', 'paul2'))
+        paul3: ApiClient = ApiClient(UnitTestClient('/api/', 'paul3'))
+
         admin.org.add_member(org1['name'], {'username': 'jack', 'role': 'Collaborator'})
+
+        # todo
+        # admin.org.add_member(org2['name'], {'username': 'paul2', 'role': 'Admin'})
+        # admin.org.add_member(org2['name'], {'username': 'paul3', 'role': 'Member'})
+
         r = jack.org.get_list()
         self.assert_list_length(r, 6)
+
+        r = admin.org.get_list()
+        self.assert_list_length(r, 5)
 
         r = paul.org.get_list()
         self.assert_list_length(r, 4)

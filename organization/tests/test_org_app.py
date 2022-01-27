@@ -1,3 +1,4 @@
+import tempfile
 from util.tests.client import ApiClient, UnitTestClient
 from util.tests.case import BaseTestCase
 
@@ -168,3 +169,103 @@ class OrganizationApplicationTest(BaseTestCase):
         new_value = r4.json()
         del new_value['update_time']
         self.assertDictEqual(new_value, old_value)
+
+    def test_modify_invalid_name(self):
+        org = self.generate_org()
+        r = self.client.org.create(org)
+        self.assert_status_201(r)
+
+        app = self.generate_app()
+        r = self.client.org.create_app(org['name'], app)
+        self.assert_status_201(r)
+
+        name = ''
+        r4 = self.client.org.modify_app(org['name'], app['name'], {'name': name})
+        self.assert_status_400(r4)
+
+        max_length = 32
+        name = 'a' * max_length + 'a'
+        r3 = self.client.org.modify_app(org['name'], app['name'], {'name': name})
+        self.assert_status_400(r3)
+
+        name = 'a' * max_length
+        r2 = self.client.org.modify_app(org['name'], app['name'], {'name': name})
+        self.assert_status_200(r2)
+
+    def test_modify_duplicate_name(self):
+        org = self.generate_org()
+        r = self.client.org.create(org)
+        self.assert_status_201(r)
+
+        app = self.generate_app()
+        r = self.client.org.create_app(org['name'], app)
+        self.assert_status_201(r)
+
+        name = app['name']
+        r2 = self.client.org.modify_app(org['name'], name, {'name': name})
+        self.assert_status_200(r2)
+
+        app2 = self.generate_app()
+        r = self.client.org.create_app(org['name'], app2)
+        self.assert_status_201(r)
+        new_name = app2['name']
+        r4 = self.client.org.modify_app(org['name'], name, {'name': new_name})
+        self.assert_status_400(r4)
+
+    def test_upload_icon(self):
+        org = self.generate_org()
+        r = self.client.org.create(org)
+        self.assert_status_201(r)
+
+        app = self.generate_app()
+        r = self.client.org.create_app(org['name'], app)
+        self.assert_status_201(r)
+
+        r2 = self.client.org.change_or_set_app_icon(org['name'], app['name'])
+        self.assert_status_200(r2)
+        self.assertNotEqual(r2.json()['icon_file'], '')
+
+        r3 = self.client.org.change_or_set_app_icon(org['name'], app['name'])
+        self.assert_status_200(r3)
+        self.assertNotEqual(r3.json()['icon_file'], r2.json()['icon_file'])
+        self.assertNotEqual(r3.json()['icon_file'], '')
+
+        file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        file.write(b'hello')
+        file_path = file.name
+        r4 = self.client.org.change_or_set_app_icon(org['name'], app['name'], file_path)
+        self.assert_status_400(r4)
+
+    def test_delete_icon(self):
+        org = self.generate_org()
+        r = self.client.org.create(org)
+        self.assert_status_201(r)
+
+        app = self.generate_app()
+        r = self.client.org.create_app(org['name'], app)
+        self.assert_status_201(r)
+
+        r2 = self.client.org.change_or_set_app_icon(org['name'], app['name'])
+        self.assert_status_200(r2)
+        self.assertNotEqual(r2.json()['icon_file'], '')
+
+        r3 = self.client.org.delete_app_icon(org['name'], app['name'])
+        self.assert_status_204(r3)
+
+        r4 = self.client.org.get_app(org['name'], app['name'])
+        self.assertEqual(r4.json()['icon_file'], '')
+
+    def test_delete_app(self):
+        org = self.generate_org()
+        r = self.client.org.create(org)
+        self.assert_status_201(r)
+
+        app = self.generate_app()
+        r = self.client.org.create_app(org['name'], app)
+        self.assert_status_201(r)
+
+        r2 = self.client.org.delete_app(org['name'], app['name'])
+        self.assert_status_204(r2)
+
+        r3 = self.client.org.get_app(org['name'], app['name'])
+        self.assert_status_404(r3)
