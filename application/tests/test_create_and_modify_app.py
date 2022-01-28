@@ -25,6 +25,8 @@ class ApplicationCreateTest(BaseTestCase):
     def test_create_app_success(self):
 
         app = self.generate_app()
+        r = self.client.app.create(app, 'xyz')
+        self.assert_status_403(r)
         r = self.client.app.create(app)
         self.assert_status_201(r)
         r = self.client.app.get_one(self.client_name, app['name'])

@@ -62,8 +62,12 @@ class ApiClient:
         def __init__(self, client):
             self.client = client
 
-        def create(self, app):
-            return self.client.post('users/' + self.client.username + '/apps', app)
+        def create(self, app, ownername=None):
+            if ownername is None:
+                username = self.client.username
+            else:
+                username = ownername
+            return self.client.post('users/' + username + '/apps', app)
 
         def get_one(self, ownername, name):
             return self.client.get('users/' + ownername + '/apps/' + name)

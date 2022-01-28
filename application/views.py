@@ -201,51 +201,16 @@ class ApplicationUserDetail(APIView):
         serializer = ApplicationUserSerializer(app_user, data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        if request.user.username == username:
+        if app_user.app.owner == app_user.user:
             if serializer.validated_data.get('role', manager_role) != manager_role:
-                other_managers = ApplicationUser.objects.filter(app__name=app_name, app__owner__username=ownername, role=manager_role).exclude(user=request.user)
-                if not other_managers.exists():
-                    raise PermissionDenied
-                app_user.app.owner = other_managers.first().user
-                app_user.app.save()
+                raise PermissionDenied
         serializer.save()
         return Response(serializer.data)
 
     def delete(self, request, ownername, app_name, username):
-        manager_role = ApplicationUser.ApplicationUserRole.Manager
-        check_app_manager_permission(ownername,app_name, request.user)
+        check_app_manager_permission(ownername, app_name, request.user)
         app_user = self.get_object(ownername, app_name, username)
-
-        if request.user.username == username:
-            other_managers = ApplicationUser.objects.filter(app__name=app_name, app__owner__username=ownername, role=manager_role).exclude(user=request.user)
-            if not other_managers.exists():
-                raise PermissionDenied
-            app_user.app.owner = other_managers.first().user
-            app_user.app.save()
-
+        if app_user.app.owner == app_user.user:
+            raise PermissionDenied
         app_user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-class ApplicationIcon(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, ownername, app_name):
-        user_app =  check_app_manager_permission(ownername, app_name, request.user)
-        serializer = ApplicationIconSerializer(user_app.app, data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        instance = serializer.save()
-        data = {
-            'icon_file': request.build_absolute_uri(instance.icon_file.url)
-        }
-        return Response(data)
-
-    def delete(self, request, ownername, app_name):
-        user_app =  check_app_manager_permission(ownername, app_name, request.user)
-        storage = user_app.app.icon_file.storage
-        icon_file = user_app.app.icon_file
-        app = user_app.app
-        app.icon_file = None
-        app.save()
-        storage.delete(icon_file.name)
         return Response(status=status.HTTP_204_NO_CONTENT)

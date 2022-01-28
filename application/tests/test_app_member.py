@@ -81,18 +81,25 @@ class ApplicationMemberTest(BaseTestCase):
         r5 = jack.app.get_one(self.client_name, name)
         self.assertEqual(r5.json()['role'], member['role'])
         r = self.client.app.change_member_role(self.client_name, name, 'admin', 'Developer')
-        self.assert_status_200(r)
-        r6 = self.client.app.change_or_set_icon(self.client_name, name)
-        self.assert_status_404(r6)
-        r6 = self.client.app.change_or_set_icon('jack', name)
-        self.assert_status_403(r6)
-        # todo: Collaborator can upload package
-        r = jack.app.change_member_role('jack', name, 'admin', 'Manager')
+        self.assert_status_403(r)
+
+        r = jack.app.change_member_role(self.client_name, name, 'admin', 'Developer')
+        self.assert_status_403(r)
+
+        r = self.client.app.change_member_role(self.client_name, name, 'jack', 'Manager')
         self.assert_status_200(r)
 
-        r7 = self.client.app.change_member_role('jack', name, member['username'], 'Viewer')
-        self.assert_status_200(r7)
-        # todo: Member can not upload package
+        # r6 = self.client.app.change_or_set_icon(self.client_name, name)
+        # self.assert_status_404(r6)
+        # r6 = self.client.app.change_or_set_icon('jack', name)
+        # self.assert_status_403(r6)
+        # # todo: Collaborator can upload package
+        # r = jack.app.change_member_role('jack', name, 'admin', 'Manager')
+        # self.assert_status_200(r)
+
+        # r7 = self.client.app.change_member_role('jack', name, member['username'], 'Viewer')
+        # self.assert_status_200(r7)
+        # # todo: Member can not upload package
 
     def test_remove_member(self):
         app = self.generate_app()
@@ -109,20 +116,27 @@ class ApplicationMemberTest(BaseTestCase):
         r3 = jack.app.get_one(self.client_name, name)
         self.assert_status_404(r3)
 
-        member = {'username': 'jack', 'role': 'Manager'}
+        member = {'username': 'jack', 'role': 'Developer'}
         r4 = self.client.app.add_member(self.client_name, name, member)
         self.assert_status_201(r4)
-        r5 = self.client.app.get_member(self.client_name, name, member['username'])
-        self.assert_status_200(r5)
 
-        r6 = jack.app.get_one(self.client_name, name)
-        self.assert_status_200(r6)
-
-        r = jack.app.remove_member(self.client_name, name, 'admin')
+        r = jack.app.change_member_role(self.client_name, name, 'jack', 'Manager')
+        self.assert_status_403(r)
+       
+        r = self.client.app.remove_member(self.client_name, name, 'jack')
         self.assert_status_204(r)
 
-        r8 = self.client.app.get_one(self.client_name, name)
-        self.assert_status_404(r8)
+        # r5 = self.client.app.get_member(self.client_name, name, member['username'])
+        # self.assert_status_200(r5)
+
+        # r6 = jack.app.get_one(self.client_name, name)
+        # self.assert_status_200(r6)
+
+        # r = jack.app.remove_member(self.client_name, name, 'admin')
+        # self.assert_status_403(r)
+
+        # self.client.app.remove_member(self.client_name, name, 'jack')
+        # self.assert_status_204(r)
 
     def test_multi_member_multi_app(self):
         admin = self.client
