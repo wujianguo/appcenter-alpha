@@ -213,6 +213,8 @@ class OrganizationCreateTest(BaseTestCase):
         self.assert_status_201(r1)
         name = org['name']
 
+        r2 = self.client.org.change_or_set_icon('xyz')
+        self.assert_status_404(r2)
         r2 = self.client.org.change_or_set_icon(name)
         self.assert_status_200(r2)
         self.assertNotEqual(r2.json()['icon_file'], '')

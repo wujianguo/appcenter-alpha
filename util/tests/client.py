@@ -6,6 +6,7 @@ class UnitTestClient:
     def __init__(self, base_url, username=None):
         self.base_url = base_url
         self.client = Client()
+        self.username = username
         if username is not None:
             user = User.objects.get_or_create(username=username)[0]
             self.client.force_login(user=user)
@@ -55,6 +56,60 @@ class RequestsClient:
         return requests.post(self.build_url(path), data=data, format="multipart")
 
 class ApiClient:
+
+    class ApplicationClient:
+
+        def __init__(self, client):
+            self.client = client
+
+        def create(self, app):
+            return self.client.post('users/' + self.client.username + '/apps', app)
+
+        def get_one(self, ownername, name):
+            return self.client.get('users/' + ownername + '/apps/' + name)
+
+        def get_list(self, ownername):
+            return self.client.get('users/' + ownername + '/apps')
+
+        def modify(self, ownername, name, app):
+            return self.client.put('users/' + ownername + '/apps/' + name, app)
+
+        def delete_app(self, ownername, name):
+            return self.client.delete('users/' + ownername + '/apps/' + name)
+
+        def change_or_set_icon(self, ownername, name, icon_file_path=None):
+            if icon_file_path is None:
+                image = PIL.Image.new('RGB', size=(1, 1))
+                file = tempfile.NamedTemporaryFile(suffix='.jpg')
+                image.save(file)
+                file_path = file.name
+            else:
+                file_path = icon_file_path
+
+            with open(file_path, 'rb') as fp:
+                data = {'icon_file': fp}
+                return self.client.upload_post('users/' + ownername + '/apps/' + name + '/icon', data=data)
+
+        def delete_icon(self, ownername, name):
+            return self.client.delete('users/' + ownername + '/apps/' + name + '/icon')
+
+        def add_member(self, ownername, name, collaborator):
+            return self.client.post('users/' + ownername + '/apps/' + name + '/people/collaborators', collaborator)
+
+        def get_member(self, ownername, name, username):
+            return self.client.get('users/' + ownername + '/apps/' + name + '/people/collaborators/' + username)
+
+        def get_member_list(self, ownername, name):
+            return self.client.get('users/' + ownername + '/apps/' + name + '/people/collaborators')
+
+        def change_member_role(self, ownername, name, collaborator, role):
+            data = {
+                'role': role
+            }
+            return self.client.put('users/' + ownername + '/apps/' + name + '/people/collaborators/' + collaborator, data)
+
+        def remove_member(self, ownername, name, collaborator):
+            return self.client.delete('users/' + ownername + '/apps/' + name + '/people/collaborators/' + collaborator)
 
     class OrganizationClient:
 
@@ -146,7 +201,12 @@ class ApiClient:
 
     def __init__(self, client):
         self._org = ApiClient.OrganizationClient(client)
+        self._app = ApiClient.ApplicationClient(client)
 
     @property
     def org(self):
         return self._org
+
+    @property
+    def app(self):
+        return self._app

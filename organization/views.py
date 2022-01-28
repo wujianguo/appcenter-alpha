@@ -13,23 +13,23 @@ from application.serializers import ApplicationIconSerializer
 from util.visibility import VisibilityType
 from util.choice import ChoiceField
 
-def check_org_view_permission(org_name, user):
+def viewer_query(user, org_name):
     if user.is_authenticated:
         allow_visibility = [VisibilityType.Public, VisibilityType.Internal]
         q1 = Q(org__name=org_name)
         q2 = Q(org__visibility__in=allow_visibility)
         q3 = Q(user=user)
-        q = (q2 | q3) & q1
+        return (q2 | q3) & q1
     else:
         q1 = Q(org__name=org_name)
         q2 = Q(org__visibility=VisibilityType.Public)
-        q = q1 & q2
+        return q1 & q2
 
+def check_org_view_permission(org_name, user):
     try:
-        return OrganizationUser.objects.get(q)
+        return OrganizationUser.objects.get(viewer_query(user, org_name))
     except OrganizationUser.DoesNotExist:
         raise Http404
-
 
 def check_org_admin_permission(org_name, user):
     try:
@@ -141,9 +141,11 @@ class OrganizationIcon(APIView):
 
     def delete(self, request, org_name):
         user_org = check_org_admin_permission(org_name, request.user)
-        user_org.org.icon_file.storage.delete(user_org.org.icon_file.name)
+        storage = user_org.org.icon_file.storage
+        icon_file = user_org.org.icon_file
         user_org.org.icon_file = None
         user_org.org.save()
+        storage.delete(icon_file.name)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class OrganizationUserList(APIView):
@@ -184,6 +186,7 @@ class OrganizationUserDetail(APIView):
             raise Http404
 
     def get(self, request, org_name, username):
+        # todo
         check_org_view_permission(org_name, request.user)
         org_user = self.get_object(org_name, username)
         serializer = OrganizationUserSerializer(org_user)
@@ -297,7 +300,9 @@ class OrgApplicationIcon(APIView):
     def delete(self, request, org_name, app_name):
         user_org = check_org_admin_permission(org_name, request.user)
         app = self.get_object(user_org.org, app_name, True)
-        app.icon_file.storage.delete(app.icon_file.name)
+        storage = app.icon_file.storage
+        icon_file = app.icon_file
         app.icon_file = None
         app.save()
+        storage.delete(icon_file.name)
         return Response(status=status.HTTP_204_NO_CONTENT)

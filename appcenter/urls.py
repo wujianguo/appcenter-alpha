@@ -15,8 +15,11 @@ Including another URLconf
 """
 from django.urls import path, include
 from organization.views import OrganizationList
+from application.views import ApplicationList
 
 urlpatterns = [
+    path('api/users/<str:ownername>/apps', ApplicationList.as_view()),
+    path('api/users/<str:ownername>/apps/', include('application.urls')),
     path('api/orgs', OrganizationList.as_view()),
     path('api/orgs/', include('organization.urls')),
 ]

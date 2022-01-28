@@ -7,6 +7,7 @@ from util.visibility import VisibilityType
 class OrganizationSerializer(serializers.ModelSerializer):
     display_name = serializers.CharField(max_length=128, help_text='A short text describing the organization')
     name = serializers.SlugField(max_length=32)
+    description = serializers.CharField(max_length=1024, required=False)
     visibility = ChoiceField(VisibilityType.choices)
     icon_file = serializers.SerializerMethodField()
 
@@ -19,7 +20,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = ['name', 'display_name', 'icon_file', 'visibility', 'update_time', 'create_time']
+        fields = ['name', 'display_name', 'description', 'icon_file', 'visibility', 'update_time', 'create_time']
 
 class OrganizationIconSerializer(serializers.ModelSerializer):
 
@@ -28,9 +29,9 @@ class OrganizationIconSerializer(serializers.ModelSerializer):
         fields = ['icon_file']
 
 class UserOrganizationSerializer(serializers.ModelSerializer):
-    
     name = serializers.StringRelatedField(source='org.name')
     display_name = serializers.StringRelatedField(source='org.display_name')
+    description = serializers.StringRelatedField(source='org.description', required=False)
     visibility = ChoiceField(VisibilityType.choices, source='org.visibility')
     role = ChoiceField(choices=OrganizationUser.OrganizationUserRole.choices, required=False)
     icon_file = serializers.SerializerMethodField()
@@ -46,7 +47,7 @@ class UserOrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrganizationUser
-        fields = ['role', 'name', 'display_name', 'icon_file', 'visibility', 'update_time', 'create_time']
+        fields = ['role', 'name', 'display_name', 'description', 'icon_file', 'visibility', 'update_time', 'create_time']
 
 class OrganizationUserSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')
@@ -61,7 +62,6 @@ class OrganizationUserAddSerializer(serializers.Serializer):
     role = ChoiceField(choices=OrganizationUser.OrganizationUserRole.choices)
 
     class Meta:
-        model = OrganizationUser
         fields = ['role', 'username']
 
 class OrgApplicationSerializer(serializers.ModelSerializer):    

@@ -7,19 +7,15 @@ def application_directory_path(instance, filename):
     name = 'icon.' + filename.split('.')[-1]
     if instance.org is not None:
       return 'orgs/{0}/apps/{1}/{2}/icons/{3}'.format(instance.org.name, instance.name, instance.platform, name)
-    elif instance.owner is not None:
-      return 'users/{0}/apps/{1}/{2}/icons/{3}'.format(instance.owner.username, instance.name, instance.platform, name)
     else:
-      return 'apps/{0}/{1}/icons/{2}'.format(instance.name, instance.platform, name)
+      return 'users/{0}/apps/{1}/{2}/icons/{3}'.format(instance.owner.username, instance.name, instance.platform, name)
 
 def universal_app_directory_path(instance, filename):
     name = 'icon.' + filename.split('.')[-1]
     if instance.org is not None:
       return 'orgs/{0}/apps/{1}/universal/icons/{2}'.format(instance.org.name, instance.name, name)
-    elif instance.owner is not None:
-      return 'users/{0}/apps/{1}/universal/icons/{2}'.format(instance.owner.username, instance.name, name)
     else:
-      return 'apps/{0}/universal/icons/{1}'.format(instance.name, name)
+      return 'users/{0}/apps/{1}/universal/icons/{2}'.format(instance.owner.username, instance.name, name)
 
 class Application(models.Model):
     class ReleaseType(models.IntegerChoices):
