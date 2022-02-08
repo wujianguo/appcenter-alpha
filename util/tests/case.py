@@ -2,8 +2,14 @@ from django.test import TestCase
 
 class BaseTestCase(TestCase):
 
+    def get_message(self, resp):
+        try:
+            return resp.json()
+        except:
+            return resp.status_code
+
     def assert_status(self, resp, status_code):
-        self.assertEqual(resp.status_code, status_code, resp.json())
+        self.assertEqual(resp.status_code, status_code, self.get_message(resp))
 
     def assert_status_200(self, resp):
         self.assert_status(resp, 200)

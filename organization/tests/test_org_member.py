@@ -47,7 +47,7 @@ class OrganizationMemberTest(BaseTestCase):
         self.assertEqual(r5.json()['username'], member['username'])
         self.assertEqual(r5.json()['role'], member['role'])
         r = self.client.org.add_member(name, member)
-        self.assert_status_400(r)
+        self.assert_status_409(r)
         r6 = jack.org.get_one(org['name'])
         self.assert_status_200(r6)
         self.assertEqual(r6.json()['role'], member['role'])
