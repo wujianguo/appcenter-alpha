@@ -20,6 +20,8 @@ from application.views import ApplicationList
 urlpatterns = [
     path('api/users/<str:ownername>/apps', ApplicationList.as_view()),
     path('api/users/<str:ownername>/apps/', include('application.urls')),
+    path('api/users/<str:ownername>/apps/', include('distribute.urls.user_app')),
     path('api/orgs', OrganizationList.as_view()),
     path('api/orgs/', include('organization.urls')),
+    path('api/orgs/', include('distribute.urls.org_app')),
 ]

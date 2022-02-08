@@ -30,7 +30,6 @@ def check_app_view_permission(ownername, app_name, user):
     except ApplicationUser.DoesNotExist:
         raise Http404
 
-
 def check_app_manager_permission(ownername, app_name, user):
     try:
         manager_role = ApplicationUser.ApplicationUserRole.Manager
@@ -75,7 +74,7 @@ class ApplicationList(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         if Application.objects.filter(name=serializer.validated_data.get('name'), owner=request.user).exists():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
         instance = serializer.save(owner=request.user)
         app_user = ApplicationUser(app=instance, user=request.user, role=ApplicationUser.ApplicationUserRole.Manager)
         app_user.save()
@@ -114,7 +113,7 @@ class ApplicationDetail(APIView):
         name = serializer.validated_data.get('name', None)
         if name and app_name != name:
             if Application.objects.filter(owner__username=ownername, name=name).exists():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
 
         serializer.save()
         data = serializer.data

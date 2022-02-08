@@ -3,7 +3,7 @@ from django.test import TestCase
 class BaseTestCase(TestCase):
 
     def assert_status(self, resp, status_code):
-        self.assertEqual(resp.status_code, status_code)
+        self.assertEqual(resp.status_code, status_code, resp.json())
 
     def assert_status_200(self, resp):
         self.assert_status(resp, 200)
@@ -22,6 +22,9 @@ class BaseTestCase(TestCase):
 
     def assert_status_404(self, resp):
         self.assert_status(resp, 404)
+
+    def assert_status_409(self, resp):
+        self.assert_status(resp, 409)
 
     def assert_list_length(self, resp, length):
         self.assertEqual(len(resp.json()), length)

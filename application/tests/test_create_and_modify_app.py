@@ -70,7 +70,7 @@ class ApplicationCreateTest(BaseTestCase):
         app2 = self.generate_app()
         app2['name'] = app['name']
         r2 = self.client.app.create(app2)
-        self.assert_status_400(r2)
+        self.assert_status_409(r2)
 
     def test_required(self):
         app = self.generate_app()
@@ -173,7 +173,7 @@ class ApplicationCreateTest(BaseTestCase):
         self.assert_status_201(r)
         new_name = app2['name']
         r4 = self.client.app.modify(self.client_name, name, {'name': new_name})
-        self.assert_status_400(r4)
+        self.assert_status_409(r4)
 
     def test_upload_icon(self):
         app = self.generate_app()

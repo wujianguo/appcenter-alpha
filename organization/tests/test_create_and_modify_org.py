@@ -67,7 +67,7 @@ class OrganizationCreateTest(BaseTestCase):
         org2 = self.generate_org()
         org2['name'] = org['name']
         r2 = self.client.org.create(org2)
-        self.assert_status_400(r2)
+        self.assert_status_409(r2)
 
     def test_required(self):
         org = self.generate_org()
@@ -170,7 +170,7 @@ class OrganizationCreateTest(BaseTestCase):
         self.assert_status_201(r3)
         new_name = org2['name']
         r4 = self.client.org.modify(name, {'name': new_name})
-        self.assert_status_400(r4)
+        self.assert_status_409(r4)
 
     def test_modify_org_display_name(self):
         org = self.generate_org()

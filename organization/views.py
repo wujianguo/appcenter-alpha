@@ -71,7 +71,7 @@ class OrganizationList(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         if Organization.objects.filter(name=serializer.validated_data['name']).exists():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
 
         instance = serializer.save()
         org_user = OrganizationUser(org=instance, user=request.user, role=OrganizationUser.OrganizationUserRole.Admin)
@@ -112,7 +112,7 @@ class OrganizationDetail(APIView):
         
         if serializer.validated_data.get('name', None) and org_name != serializer.validated_data['name']:
             if Organization.objects.filter(name=serializer.validated_data['name']).exists():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
 
         serializer.save()
         data = serializer.data
@@ -166,7 +166,7 @@ class OrganizationUserList(APIView):
         role = serializer.validated_data['role']
         try:
             OrganizationUser.objects.get(org__name=org_name, user__username=username)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
         except OrganizationUser.DoesNotExist:
             try:
                 user = User.objects.get(username=username)
@@ -235,7 +235,7 @@ class OrgApplicationList(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         if Application.objects.filter(name=serializer.validated_data['name'], org=user_org.org).exists():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
         serializer.save(org=user_org.org)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -263,7 +263,7 @@ class OrgApplicationDetail(APIView):
 
         if serializer.validated_data.get('name', None) and app_name != serializer.validated_data['name']:
             if Application.objects.filter(org=user_org.org, name=serializer.validated_data['name']).exists():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
 
         # todo: transfer app to another org or user
         serializer.save()

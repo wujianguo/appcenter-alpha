@@ -115,6 +115,23 @@ class ApiClient:
         def remove_member(self, ownername, name, collaborator):
             return self.client.delete('users/' + ownername + '/apps/' + name + '/people/collaborators/' + collaborator)
 
+        def upload_app(self, ownername, name, file_path):
+            with open(file_path, 'rb') as fp:
+                data = {'file': fp}
+                return self.client.upload_post('users/' + ownername + '/apps/' + name + '/distribute/packages', data=data)
+
+        def get_package(self, ownername, name, internal_build):
+            pass
+
+        def get_package_list(self, ownername, name):
+            pass
+
+        def modify_package(self, ownername, name, internal_build):
+            pass
+
+        def remove_package(self, ownername, name, internal_build):
+            pass
+
     class OrganizationClient:
 
         def __init__(self, client):
@@ -202,6 +219,22 @@ class ApiClient:
         def delete_app_icon(self, name, app_name):
             return self.client.delete('orgs/' + name + '/apps/' + app_name + '/icon')
 
+        def upload_app(self, name, app_name, file_path):
+            with open(file_path, 'rb') as fp:
+                data = {'file': fp}
+                return self.client.upload_post('orgs/' + name + '/apps/' + app_name + '/distribute/packages', data=data)
+
+        def get_package(self, name, app_name, internal_build):
+            return self.client.get('orgs/' + name + '/apps/' + app_name + '/distribute/packages/' + str(internal_build))
+
+        def get_package_list(self, name, app_name):
+            return self.client.get('orgs/' + name + '/apps/' + app_name + '/distribute/packages')
+
+        def modify_package(self, name, app_name, internal_build):
+            pass
+
+        def remove_package(self, name, app_name, internal_build):
+            pass
 
     def __init__(self, client):
         self._org = ApiClient.OrganizationClient(client)

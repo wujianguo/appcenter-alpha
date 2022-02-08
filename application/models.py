@@ -6,9 +6,9 @@ from util.visibility import VisibilityType
 def application_directory_path(instance, filename):
     name = 'icon.' + filename.split('.')[-1]
     if instance.org is not None:
-      return 'orgs/{0}/apps/{1}/{2}/icons/{3}'.format(instance.org.name, instance.name, instance.platform, name)
+      return 'orgs/{0}/apps/{1}/icons/{2}'.format(instance.org.name, instance.name, name)
     else:
-      return 'users/{0}/apps/{1}/{2}/icons/{3}'.format(instance.owner.username, instance.name, instance.platform, name)
+      return 'users/{0}/apps/{1}/icons/{2}'.format(instance.owner.username, instance.name, name)
 
 def universal_app_directory_path(instance, filename):
     name = 'icon.' + filename.split('.')[-1]
