@@ -63,11 +63,38 @@ class DistributeUploadTest(BaseTestCase):
         self.assert_status_201(r1)
 
         app = self.generate_ios_app()
-        r = self.client.org.create_app(org['name'], app)
+        org_name = org['name']
+        app_name = app['name']
+        r = self.client.org.create_app(org_name, app)
         self.assert_status_201(r)
 
-        r = self.client.org.upload_app(org['name'], app['name'], self.ipa_path)
+        r = self.client.org.upload_app(org_name, app_name, self.ipa_path)
         self.assert_status_201(r)
+        internal_build = r.json()['internal_build']
+
+        r = self.client.org.get_package(org_name, app_name, internal_build)
+        self.assert_status_200(r)
+
+        r = self.client.org.get_package_list(org_name, app_name)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+
+        package = {'description': 'hello'}
+        r = self.client.org.modify_package(org_name, app_name, internal_build, package)
+        self.assert_status_200(r)
+        r = self.client.org.get_package(org_name, app_name, internal_build)
+        self.assert_status_200(r)
+        self.assertEqual(r.json()['description'], package['description'])
+
+        r = self.client.org.remove_package(org_name, app_name, internal_build)
+        self.assert_status_204(r)
+        r = self.client.org.get_package(org_name, app_name, internal_build)
+        self.assert_status_404(r)
+
+        r = self.client.org.get_package_list(org_name, app_name)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 0)
+
 
     def test_org_app_upload_apk(self):
         org = self.generate_org()
@@ -75,24 +102,70 @@ class DistributeUploadTest(BaseTestCase):
         self.assert_status_201(r1)
 
         app = self.generate_android_app()
-        r = self.client.org.create_app(org['name'], app)
+        org_name = org['name']
+        app_name = app['name']
+        r = self.client.org.create_app(org_name, app)
         self.assert_status_201(r)
 
-        r = self.client.org.upload_app(org['name'], app['name'], self.apk_path)
+        r = self.client.org.upload_app(org_name, app_name, self.apk_path)
         self.assert_status_201(r)
+
+        r = self.client.org.get_package(org_name, app_name, 1)
+        self.assert_status_200(r)
+
+        r = self.client.org.get_package_list(org_name, app_name)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
 
     def test_user_app_upload_ipa(self):
         app = self.generate_ios_app()
         r = self.client.app.create(app)
         self.assert_status_201(r)
 
-        r = self.client.app.upload_app('admin', app['name'], self.ipa_path)
+        ownername = 'admin'
+        app_name = app['name']
+
+        r = self.client.app.upload_app(ownername, app_name, self.ipa_path)
         self.assert_status_201(r)
+        internal_build = r.json()['internal_build']
+
+        r = self.client.app.get_package(ownername, app_name, internal_build)
+        self.assert_status_200(r)
+
+        r = self.client.app.get_package_list(ownername, app_name)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+
+        package = {'description': 'hello'}
+        r = self.client.app.modify_package(ownername, app_name, internal_build, package)
+        self.assert_status_200(r)
+        r = self.client.app.get_package(ownername, app_name, internal_build)
+        self.assert_status_200(r)
+        self.assertEqual(r.json()['description'], package['description'])
+
+        r = self.client.app.remove_package(ownername, app_name, internal_build)
+        self.assert_status_204(r)
+        r = self.client.app.get_package(ownername, app_name, internal_build)
+        self.assert_status_404(r)
+
+        r = self.client.app.get_package_list(ownername, app_name)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 0)
 
     def test_user_app_upload_apk(self):
         app = self.generate_android_app()
         r = self.client.app.create(app)
         self.assert_status_201(r)
 
-        r = self.client.app.upload_app('admin', app['name'], self.apk_path)
+        ownername = 'admin'
+        app_name = app['name']
+
+        r = self.client.app.upload_app(ownername, app_name, self.apk_path)
         self.assert_status_201(r)
+
+        r = self.client.app.get_package(ownername, app_name, 1)
+        self.assert_status_200(r)
+
+        r = self.client.app.get_package_list(ownername, app_name)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)

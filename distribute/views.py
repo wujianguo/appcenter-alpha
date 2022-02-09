@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from distribute.serializers import *
 from distribute.app_parser import parser
+from distribute.models import ReleaseDeploymentKey
 from organization.models import OrganizationUser, Organization
 from application.models import Application, ApplicationUser
 from util.visibility import VisibilityType
@@ -144,23 +145,29 @@ class OrgAppPackageDetail(APIView):
 class OrgAppReleaseList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    def get(self, request, org_name, app_name):
+    def get(self, request, org_name, app_name, env):
         user_org = check_org_view_permission(org_name, request.user)
-        releases = Release.objects.filter(app__org=user_org.org, app__name=app_name)
+        releases = Release.objects.filter(app__org=user_org.org, app__name=app_name, deployment__name=env)
         serializer = ReleaseSerializer(releases, many=True, context={'request': request})
         return Response(serializer.data)
 
-    def post(self, request, org_name, app_name):
+    def post(self, request, org_name, app_name, env):
         user_org = check_org_admin_permission(org_name, request.user)
-        serializer = ReleaseSerializer(data=request.data, context={'request': request})
+        serializer = ReleaseCreateSerializer(data=request.data, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         try:
             app = Application.objects.get(org=user_org.org, name=app_name)
         except Application.DoesNotExist:
             raise Http404
-        serializer.save(app=app)
-        return Response(serializer.data)
+        try:
+            deployment = ReleaseDeploymentKey.objects.get(app=app, name=env)
+        except ReleaseDeploymentKey.DoesNotExist:
+            raise Http404
+        release_id = Release.objects.filter(app=app).count() + 1
+        instance = serializer.save(app=app, release_id=release_id, deployment=deployment)
+        response_serializer = ReleaseSerializer(instance, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 class OrgAppReleaseDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -180,11 +187,12 @@ class OrgAppReleaseDetail(APIView):
     def put(self, request, org_name, app_name, release_id):
         user_org = check_org_upload_app_permission(org_name, request.user)
         release = self.get_object(user_org.org, app_name, release_id)
-        serializer = ReleaseSerializer(release, data=request.data, partial=True, context={'request': request})
+        serializer = ReleaseUpdateSerializer(release, data=request.data, partial=True, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        return Response(serializer.data)
+        instance = serializer.save()
+        response_serializer = ReleaseSerializer(instance, context={'request': request})
+        return Response(response_serializer.data)
 
     def delete(self, request, org_name, app_name, release_id):
         user_org = check_org_upload_app_permission(org_name, request.user)
@@ -292,19 +300,26 @@ class UserAppPackageDetail(APIView):
 class UserAppReleaseList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    def get(self, request, ownername, app_name):
+    def get(self, request, ownername, app_name, env):
         user_app = check_app_view_permission(ownername, app_name, request.user)
-        releases = Release.objects.filter(app=user_app.app)
+        releases = Release.objects.filter(app=user_app.app, deployment__name=env)
         serializer = ReleaseSerializer(releases, many=True, context={'request': request})
         return Response(serializer.data)
 
-    def post(self, request, ownername, app_name):
+    def post(self, request, ownername, app_name, env):
         user_app = check_app_manager_permission(ownername, app_name, request.user)
-        serializer = ReleaseSerializer(data=request.data, context={'request': request})
+        app = user_app.app
+        serializer = ReleaseCreateSerializer(data=request.data, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save(app=user_app.app)
-        return Response(serializer.data)
+        try:
+            deployment = ReleaseDeploymentKey.objects.get(app=app, name=env)
+        except ReleaseDeploymentKey.DoesNotExist:
+            raise Http404
+        release_id = Release.objects.filter(app=app).count() + 1
+        instance = serializer.save(app=app, release_id=release_id, deployment=deployment)
+        response_serializer = ReleaseSerializer(instance, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 class UserAppReleaseDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -324,7 +339,7 @@ class UserAppReleaseDetail(APIView):
     def put(self, request, ownername, app_name, release_id):
         user_app = check_app_manager_permission(ownername, app_name, request.user)
         release = self.get_object(user_app.app, release_id)
-        serializer = ReleaseSerializer(release, data=request.data, partial=True, context={'request': request})
+        serializer = ReleaseUpdateSerializer(release, data=request.data, partial=True, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()

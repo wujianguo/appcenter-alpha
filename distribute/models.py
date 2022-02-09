@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.dispatch import receiver
 from application.models import Application
 
-# Staging, Production, ...
+# staging, production, ...
 class ReleaseDeploymentKey(models.Model):
     app = models.ForeignKey(Application, on_delete=models.CASCADE)
     name = models.SlugField(max_length=32)
@@ -17,8 +17,8 @@ def notify_app_save(sender, instance, created, **kwargs):
     if not created:
         return
     ReleaseDeploymentKey.objects.bulk_create([
-        ReleaseDeploymentKey(app=instance, name='Staging'),
-        ReleaseDeploymentKey(app=instance, name='Production')
+        ReleaseDeploymentKey(app=instance, name='staging'),
+        ReleaseDeploymentKey(app=instance, name='production')
     ])
 
 def distribute_package_path(instance, filename):

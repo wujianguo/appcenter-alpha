@@ -121,16 +121,32 @@ class ApiClient:
                 return self.client.upload_post('users/' + ownername + '/apps/' + name + '/distribute/packages', data=data)
 
         def get_package(self, ownername, name, internal_build):
-            pass
+            return self.client.get('users/' + ownername + '/apps/' + name + '/distribute/packages/' + str(internal_build))
 
         def get_package_list(self, ownername, name):
-            pass
+            return self.client.get('users/' + ownername + '/apps/' + name + '/distribute/packages')
 
-        def modify_package(self, ownername, name, internal_build):
-            pass
+        def modify_package(self, ownername, name, internal_build, package):
+            return self.client.put('users/' + ownername + '/apps/' + name + '/distribute/packages/' + str(internal_build), package)
 
         def remove_package(self, ownername, name, internal_build):
-            pass
+            return self.client.delete('users/' + ownername + '/apps/' + name + '/distribute/packages/' + str(internal_build))
+
+        def create_release(self, ownername, name, env, release):
+            return self.client.post('users/' + ownername + '/apps/' + name + '/distribute/releases/env/' + env, release)            
+
+        def get_release(self, ownername, name, release_id):
+            return self.client.get('users/' + ownername + '/apps/' + name + '/distribute/releases/' + str(release_id))
+
+        def get_release_list(self, ownername, name, env):
+            return self.client.get('users/' + ownername + '/apps/' + name + '/distribute/releases/env/' + env)
+
+        def modify_release(self, ownername, name, release_id, release):
+            return self.client.put('users/' + ownername + '/apps/' + name + '/distribute/releases/' + str(release_id), release)
+
+        def remove_release(self, ownername, name, release_id):
+            return self.client.delete('users/' + ownername + '/apps/' + name + '/distribute/releases/' + str(release_id))            
+
 
     class OrganizationClient:
 
@@ -230,11 +246,26 @@ class ApiClient:
         def get_package_list(self, name, app_name):
             return self.client.get('orgs/' + name + '/apps/' + app_name + '/distribute/packages')
 
-        def modify_package(self, name, app_name, internal_build):
-            pass
+        def modify_package(self, name, app_name, internal_build, package):
+            return self.client.put('orgs/' + name + '/apps/' + app_name + '/distribute/packages/' + str(internal_build), package)
 
         def remove_package(self, name, app_name, internal_build):
-            pass
+            return self.client.delete('orgs/' + name + '/apps/' + app_name + '/distribute/packages/' + str(internal_build))            
+
+        def create_release(self, name, app_name, env, release):
+            return self.client.post('orgs/' + name + '/apps/' + app_name + '/distribute/releases/env/' + env, release)            
+
+        def get_release(self, name, app_name, release_id):
+            return self.client.get('orgs/' + name + '/apps/' + app_name + '/distribute/releases/' + str(release_id))
+
+        def get_release_list(self, name, app_name, env):
+            return self.client.get('orgs/' + name + '/apps/' + app_name + '/distribute/releases/env/' + env)
+
+        def modify_release(self, name, app_name, release_id, release):
+            return self.client.put('orgs/' + name + '/apps/' + app_name + '/distribute/releases/' + str(release_id), release)
+
+        def remove_release(self, name, app_name, release_id):
+            return self.client.delete('orgs/' + name + '/apps/' + app_name + '/distribute/releases/' + str(release_id))            
 
     def __init__(self, client):
         self._org = ApiClient.OrganizationClient(client)

@@ -34,8 +34,6 @@ class UploadPackageSerializer(serializers.Serializer):
 
 class ReleaseSerializer(NonNullModelSerializer):
     name = serializers.ReadOnlyField(source='package.name')
-    package_file = serializers.ReadOnlyField(source='package.package_file')
-    icon_file = serializers.ReadOnlyField(source='package.icon_file')
     fingerprint = serializers.ReadOnlyField(source='package.fingerprint')
     version = serializers.ReadOnlyField(source='package.version')
     short_version = serializers.ReadOnlyField(source='package.short_version')
@@ -45,10 +43,38 @@ class ReleaseSerializer(NonNullModelSerializer):
     commit_id = serializers.ReadOnlyField(source='package.commit_id')
     min_os = serializers.ReadOnlyField(source='package.min_os')
     channle = serializers.ReadOnlyField(source='package.channle')
+
+    package_file = serializers.SerializerMethodField()
+    icon_file = serializers.SerializerMethodField()
+
+    def get_package_file(self, obj):
+        try:
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.package.package_file.url)
+        except:
+            return ''
+
+    def get_icon_file(self, obj):
+        try:
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.package.icon_file.url)
+        except:
+            return ''
+
     class Meta:
         model = Release
         fields = ['release_id', 'release_notes', 'enabled', 'name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'bundle_identifier', 'channle', 'update_time', 'create_time']
-        read_only_fields = ['upgrade_id', 'name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'bundle_identifier', 'channle']
+        read_only_fields = ['release_id', 'name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'bundle_identifier', 'channle']
+
+class ReleaseCreateSerializer(NonNullModelSerializer):
+    class Meta:
+        model = Release
+        fields = ['release_notes', 'enabled', 'package']
+
+class ReleaseUpdateSerializer(NonNullModelSerializer):
+    class Meta:
+        model = Release
+        fields = ['release_notes', 'enabled']
 
 class UpgradeSerializer(NonNullModelSerializer):
     name = serializers.ReadOnlyField(source='release.package.name')
