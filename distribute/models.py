@@ -107,7 +107,8 @@ class ReleaseStore(models.Model):
         ReviewRejected = 4
         Released = 5
 
-    release = models.ForeignKey(Release, on_delete=models.CASCADE)
+    package = models.ForeignKey(Package, on_delete=models.CASCADE)
+    release_notes = models.CharField(max_length=1024, help_text="The release's release notes.")
     store = models.ForeignKey(StoreApp, on_delete=models.CASCADE)
     state = models.IntegerField(choices=State.choices)
     operator = models.ForeignKey(User, on_delete=models.CASCADE)

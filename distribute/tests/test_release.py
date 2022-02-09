@@ -73,7 +73,7 @@ class ReleaseTest(BaseTestCase):
 
         release = {
             'release_notes': 'release_notes',
-            'package': internal_build,
+            'internal_build': internal_build,
             'enabled': True
         }
         env = 'production'
@@ -112,7 +112,7 @@ class ReleaseTest(BaseTestCase):
 
         release = {
             'release_notes': 'release_notes',
-            'package': internal_build,
+            'internal_build': internal_build,
             'enabled': True
         }
         env = 'production'

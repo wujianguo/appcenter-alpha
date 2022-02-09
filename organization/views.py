@@ -12,6 +12,7 @@ from application.models import Application
 from application.serializers import ApplicationIconSerializer
 from util.visibility import VisibilityType
 from util.choice import ChoiceField
+from util.reserved import reserved_names
 
 def viewer_query(user, org_name):
     if user.is_authenticated:
@@ -70,7 +71,10 @@ class OrganizationList(APIView):
         serializer = OrganizationSerializer(data=request.data, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        if Organization.objects.filter(name=serializer.validated_data['name']).exists():
+        name = serializer.validated_data['name']
+        if name in reserved_names:
+            return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
+        if Organization.objects.filter(name=name).exists():
             return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
 
         instance = serializer.save()

@@ -164,8 +164,11 @@ class OrgAppReleaseList(APIView):
             deployment = ReleaseDeploymentKey.objects.get(app=app, name=env)
         except ReleaseDeploymentKey.DoesNotExist:
             raise Http404
+        package = Package.objects.get(internal_build=serializer.validated_data['internal_build'], app=app)
         release_id = Release.objects.filter(app=app).count() + 1
-        instance = serializer.save(app=app, release_id=release_id, deployment=deployment)
+        enabled = serializer.validated_data['enabled']
+        release_notes = serializer.validated_data['release_notes']
+        instance = Release.objects.create(app=app, release_id=release_id, deployment=deployment, package=package, release_notes=release_notes, enabled=enabled)
         response_serializer = ReleaseSerializer(instance, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -201,6 +204,14 @@ class OrgAppReleaseDetail(APIView):
         release.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class OrgStoreAppRList(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, org_name, app_name):
+        user_org = check_org_view_permission(org_name, request.user)
+        releases = StoreApp.objects.filter(app__org=user_org.org, app__name=app_name)
+        serializer = StoreAppSerializer(releases, many=True, context={'request': request})
+        return Response(serializer.data)
 
 # Application
 
@@ -316,8 +327,11 @@ class UserAppReleaseList(APIView):
             deployment = ReleaseDeploymentKey.objects.get(app=app, name=env)
         except ReleaseDeploymentKey.DoesNotExist:
             raise Http404
+        package = Package.objects.get(internal_build=serializer.validated_data['internal_build'], app=app)
         release_id = Release.objects.filter(app=app).count() + 1
-        instance = serializer.save(app=app, release_id=release_id, deployment=deployment)
+        enabled = serializer.validated_data['enabled']
+        release_notes = serializer.validated_data['release_notes']
+        instance = Release.objects.create(app=app, release_id=release_id, deployment=deployment, package=package, release_notes=release_notes, enabled=enabled)
         response_serializer = ReleaseSerializer(instance, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 

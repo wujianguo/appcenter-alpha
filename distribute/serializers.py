@@ -1,7 +1,8 @@
 from collections import OrderedDict
 from dataclasses import field
-from distribute.models import Package, Release, Upgrade
+from distribute.models import Package, Release, ReleaseStore, Upgrade, StoreApp
 from rest_framework import serializers
+from util.choice import ChoiceField
 
 class NonNullModelSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
@@ -19,8 +20,8 @@ class PackageSerializer(NonNullModelSerializer):
 
     class Meta:
         model = Package
-        fields = ['name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'bundle_identifier', 'channle', 'description', 'update_time', 'create_time']
-        read_only_fields = ['name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'min_os', 'bundle_identifier', 'channle']
+        fields = ['name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'channle', 'description', 'update_time', 'create_time']
+        read_only_fields = ['name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'min_os', 'channle']
 
 class PackageUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -63,13 +64,15 @@ class ReleaseSerializer(NonNullModelSerializer):
 
     class Meta:
         model = Release
-        fields = ['release_id', 'release_notes', 'enabled', 'name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'bundle_identifier', 'channle', 'update_time', 'create_time']
-        read_only_fields = ['release_id', 'name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'bundle_identifier', 'channle']
+        fields = ['release_id', 'release_notes', 'enabled', 'name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'channle', 'update_time', 'create_time']
+        read_only_fields = ['release_id', 'name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'channle']
 
-class ReleaseCreateSerializer(NonNullModelSerializer):
+class ReleaseCreateSerializer(serializers.Serializer):
+    internal_build = serializers.IntegerField()
+    enabled = serializers.BooleanField()
+    release_notes = serializers.CharField()
     class Meta:
-        model = Release
-        fields = ['release_notes', 'enabled', 'package']
+        fields = ['release_notes', 'enabled', 'internal_build']
 
 class ReleaseUpdateSerializer(NonNullModelSerializer):
     class Meta:
@@ -94,3 +97,35 @@ class UpgradeSerializer(NonNullModelSerializer):
         model = Upgrade
         fields = ['upgrade_id', 'release_notes', 'target_version', 'enabled', 'mandatory', 'name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'bundle_identifier', 'channle', 'update_time', 'create_time']
         read_only_fields = ['upgrade_id', 'name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'bundle_identifier', 'channle']
+
+class StoreAppSerializer(NonNullModelSerializer):
+    class Meta:
+        model = StoreApp
+        fields = ['store_name', 'store_display_name', 'store_icon', 'auth_data', 'current_version']
+
+class StoreAppVivoAuthSerializer(serializers.Serializer):
+    access_key = serializers.CharField()
+    access_secret = serializers.CharField()
+    class Meta:
+        fields = ['access_key', 'access_secret']
+
+class ReleaseStoreSerializer(NonNullModelSerializer):
+    class Meta:
+        model = ReleaseStore
+        fields = ['name', 'package_file', 'icon_file', 'fingerprint', 'version', 'short_version', 'internal_build', 'size', 'bundle_identifier', 'commit_id', 'min_os', 'channle', 'release_store_id', 'release_notes', 'store', 'state', 'operator', 'update_time', 'create_time']
+
+class ReleaseStoreCreateSerializer(serializers.Serializer):
+    internal_build = serializers.IntegerField()
+    release_notes = serializers.CharField()
+    store = ChoiceField(choices=StoreApp.StoreType.choices)
+    state = ChoiceField(choices=ReleaseStore.State.choices)
+
+    class Meta:
+        fields = ['internal_build', 'release_notes', 'store', 'state']
+
+class ReleaseStoreUpdateSerializer(serializers.Serializer):
+    internal_build = serializers.IntegerField()
+    release_notes = serializers.CharField()
+    state = ChoiceField(choices=ReleaseStore.State.choices)
+    class Meta:
+        fields = ['parent', 'release_notes', 'state']
