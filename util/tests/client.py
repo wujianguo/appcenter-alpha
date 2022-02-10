@@ -2,58 +2,86 @@ import tempfile, PIL, requests
 from django.test import Client
 from django.contrib.auth.models import User
 
-class UnitTestClient:
+class DjangoTestClient:
     def __init__(self, base_url, username=None):
         self.base_url = base_url
         self.client = Client()
         self.username = username
+        self.token = ''
         if username is not None:
             user = User.objects.get_or_create(username=username)[0]
             self.client.force_login(user=user)
 
+    def set_token(self, token):
+        if token is not None:
+            self.token = 'Bearer ' + token
+        else:
+            self.token = ''
+
     def build_url(self, path):
         return self.base_url + path
 
     def get(self, path):
-        return self.client.get(self.build_url(path))
+        return self.client.get(self.build_url(path), HTTP_AUTHORIZATION=self.token)
 
     def post(self, path, body):
         content_type = 'application/json'
-        return self.client.post(self.build_url(path), body, content_type=content_type)
+        return self.client.post(self.build_url(path), body, content_type=content_type, HTTP_AUTHORIZATION=self.token)
 
     def put(self, path, body):
         content_type = 'application/json'
-        return self.client.put(self.build_url(path), body, content_type=content_type)
+        return self.client.put(self.build_url(path), body, content_type=content_type, HTTP_AUTHORIZATION=self.token)
 
     def delete(self, path):
-        return self.client.delete(self.build_url(path))
+        return self.client.delete(self.build_url(path), HTTP_AUTHORIZATION=self.token)
 
     def upload_post(self, path, data):
-        return self.client.post(self.build_url(path), data=data, format="multipart")
+        return self.client.post(self.build_url(path), data=data, format="multipart", HTTP_AUTHORIZATION=self.token)
 
 class RequestsClient:
     def __init__(self, base_url, username=None):
-        self.base_url = base_url
-        if username is not None:
-            self.username = username
+        self.base_url = 'https://appcenter.libms.top' + base_url
+        self.token = None
+        self.username = username
+        if username:
+            password = 'user1*Pswd'
+            r = self.post('user/login', {'username': username, 'password': password})
+            if r.status_code == 200:
+                self.token = r.json()['token']
+            else:
+                r = self.post('user/register', {'username': username, 'password': password})
+                self.token = r.json()['token']
+
+    def set_token(self, token):
+        self.token = token
 
     def build_url(self, path):
         return self.base_url + path
 
+    def headers(self):
+        if self.token:
+            return {
+                'Authorization': 'Bearer ' + self.token
+            }
+        return {}
+
     def get(self, path):
-        return requests.get(self.build_url(path))
+        return requests.get(self.build_url(path), headers=self.headers())
 
     def post(self, path, body):
-        return requests.post(self.build_url(path), json=body)
+        return requests.post(self.build_url(path), json=body, headers=self.headers())
 
     def put(self, path, body):
-        return requests.put(self.build_url(path), json=body)
+        return requests.put(self.build_url(path), json=body, headers=self.headers())
 
     def delete(self, path):
-        return requests.delete(self.build_url(path))
+        return requests.delete(self.build_url(path), headers=self.headers())
 
     def upload_post(self, path, data):
-        return requests.post(self.build_url(path), data=data, format="multipart")
+        return requests.post(self.build_url(path), files=data, headers=self.headers())
+
+class UnitTestClient(DjangoTestClient):
+    pass
 
 class ApiClient:
 
@@ -267,9 +295,27 @@ class ApiClient:
         def remove_release(self, name, app_name, release_id):
             return self.client.delete('orgs/' + name + '/apps/' + app_name + '/distribute/releases/' + str(release_id))            
 
+    class UserClient:
+
+        def __init__(self, client):
+            self.client = client
+
+        def register(self, user):
+            return self.client.post('user/register', user)
+
+        def login(self, user):
+            return self.client.post('user/login', user)
+
+        def logout(self):
+            return self.client.post('user/logout')
+
+        def me(self):
+            return self.client.get('user/me')
+
     def __init__(self, client):
         self._org = ApiClient.OrganizationClient(client)
         self._app = ApiClient.ApplicationClient(client)
+        self._user = ApiClient.UserClient(client)
 
     @property
     def org(self):
@@ -278,3 +324,7 @@ class ApiClient:
     @property
     def app(self):
         return self._app
+
+    @property
+    def user(self):
+        return self._user

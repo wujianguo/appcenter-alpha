@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from dataclasses import field
 from distribute.models import Package, Release, ReleaseStore, Upgrade, StoreApp
 from rest_framework import serializers
 from util.choice import ChoiceField

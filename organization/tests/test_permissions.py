@@ -5,6 +5,7 @@ from util.tests.case import BaseTestCase
 class OrganizationPermissionTest(BaseTestCase):
 
     def setUp(self):
+        super().setUp()
         self.client: ApiClient = ApiClient(UnitTestClient('/api/', 'admin'))
         self.org_index = 0
 
@@ -166,7 +167,7 @@ class OrganizationPermissionTest(BaseTestCase):
 
         anonymous_user = ApiClient(UnitTestClient('/api/'))
         r7 = anonymous_user.org.modify(org['name'], {'visibility': 'Private'})
-        self.assert_status_403(r7)
+        self.assert_status_401(r7)
 
     def test_admin_has_all_permissions(self):
         pass

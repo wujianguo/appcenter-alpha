@@ -10,8 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
-import os
+from urllib.parse import urlparse
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +22,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', default='django-insecure-6^awah=7&ku2_q5#%_r9e08@(#a9i4vlc*niem81!f4g5l_1oe')
+SECRET_KEY = os.environ.get('APPCENTER_SETTINGS_SECRET_KEY', default='django-insecure-6^awah=7&ku2_q5#%_r9e08@(#a9i4vlc*niem81!f4g5l_1oe')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(int(os.environ.get('DEBUG', default=1)))
+DEBUG = bool(int(os.environ.get('APPCENTER_SETTINGS_DEBUG', default=1)))
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', default='').split(',')
+EXTERNAL_URL = os.environ.get('APPCENTER_SETTINGS_EXTERNAL_URL', default='')
+if EXTERNAL_URL:
+    ALLOWED_HOSTS = [urlparse(EXTERNAL_URL).hostname]
+else:
+    ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -35,13 +40,15 @@ INSTALLED_APPS = [
     'application.apps.ApplicationConfig',
     'organization.apps.OrganizationConfig',
     'distribute.apps.DistributeConfig',
+    'user.apps.UserConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework'
+    'rest_framework',
+    'rest_framework.authtoken'
 ]
 
 MIDDLEWARE = [
@@ -114,14 +121,14 @@ if DEBUG:
     )
 
 REST_FRAMEWORK = {
-    # 'DEFAULT_PERMISSION_CLASSES': (
-    #     'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    # ),
-    # 'DEFAULT_AUTHENTICATION_CLASSES': (
-    #     'user.authentication.BearerTokenAuthentication',
-        # 'rest_framework.authentication.BasicAuthentication',
-        # 'rest_framework.authentication.SessionAuthentication',
-    # ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'user.authentication.BearerTokenAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
     'DEFAULT_RENDERER_CLASSES': DEFAULT_RENDERER_CLASSES
 }
 
@@ -141,7 +148,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_ROOT = os.environ.get('APPCENTER_SETTINGS_STATIC_ROOT', default='var/static/')
+STATIC_URL = EXTERNAL_URL + 'static/'
+
+MEDIA_ROOT = os.environ.get('APPCENTER_SETTINGS_MEDIA_ROOT', default='var/media')
+MEDIA_URL = EXTERNAL_URL + 'media/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -150,9 +161,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SECURE_HSTS_SECONDS = 31536000
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 SECURE_HSTS_PRELOAD = True
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 CSRF_COOKIE_SECURE = True
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True

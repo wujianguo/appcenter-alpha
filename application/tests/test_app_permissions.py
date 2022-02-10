@@ -5,6 +5,7 @@ from util.tests.case import BaseTestCase
 class ApplicationPermissionTest(BaseTestCase):
 
     def setUp(self):
+        super().setUp()
         self.client: ApiClient = ApiClient(UnitTestClient('/api/', 'admin'))
         self.client_name = 'admin'
         self.app_index = 0
@@ -170,7 +171,7 @@ class ApplicationPermissionTest(BaseTestCase):
 
         anonymous_user = ApiClient(UnitTestClient('/api/'))
         r7 = anonymous_user.app.modify(self.client_name, app['name'], {'visibility': 'Private'})
-        self.assert_status_403(r7)
+        self.assert_status_401(r7)
 
     def test_admin_has_all_permissions(self):
         pass

@@ -1,6 +1,17 @@
+import os, shutil
 from django.test import TestCase
 
 class BaseTestCase(TestCase):
+
+    def setUp(self):
+        try:
+            db_path = 'db.sqlite3'
+            db_bak_path = 'db_bak.sqlite3'
+            if os.path.exists(db_path):
+                os.remove(db_path)
+            shutil.copyfile(db_bak_path, db_path)
+        except:
+            pass
 
     def get_message(self, resp):
         try:
@@ -22,6 +33,9 @@ class BaseTestCase(TestCase):
 
     def assert_status_400(self, resp):
         self.assert_status(resp, 400)
+
+    def assert_status_401(self, resp):
+        self.assert_status(resp, 401)
 
     def assert_status_403(self, resp):
         self.assert_status(resp, 403)

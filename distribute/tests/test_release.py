@@ -5,6 +5,7 @@ from util.tests.case import BaseTestCase
 class ReleaseTest(BaseTestCase):
 
     def setUp(self):
+        super().setUp()
         self.client: ApiClient = ApiClient(UnitTestClient('/api/', 'admin'))
         self.org_index = 0
         self.app_index = 0

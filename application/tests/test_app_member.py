@@ -5,6 +5,7 @@ from util.tests.case import BaseTestCase
 class ApplicationMemberTest(BaseTestCase):
 
     def setUp(self):
+        super().setUp()
         self.client: ApiClient = ApiClient(UnitTestClient('/api/', 'admin'))
         self.client_name = 'admin'
         self.app_index = 0

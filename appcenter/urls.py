@@ -18,6 +18,7 @@ from organization.views import OrganizationList
 from application.views import ApplicationList
 
 urlpatterns = [
+    path('api/user/', include('user.urls')),
     path('api/users/<str:ownername>/apps', ApplicationList.as_view()),
     path('api/users/<str:ownername>/apps/', include('application.urls')),
     path('api/users/<str:ownername>/apps/', include('distribute.urls.user_app')),
