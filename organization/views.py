@@ -27,9 +27,7 @@ def viewer_query(user, org_name):
         return q1 & q2
 
 def check_org_view_permission(org_name, user):
-    try:
-        return OrganizationUser.objects.get(viewer_query(user, org_name))
-    except OrganizationUser.DoesNotExist:
+    if not OrganizationUser.objects.filter(viewer_query(user, org_name)).exists():
         raise Http404
 
 def check_org_admin_permission(org_name, user):
@@ -78,8 +76,7 @@ class OrganizationList(APIView):
             return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
 
         instance = serializer.save()
-        org_user = OrganizationUser(org=instance, user=request.user, role=OrganizationUser.OrganizationUserRole.Admin)
-        org_user.save()
+        org_user = OrganizationUser.objects.create(org=instance, user=request.user, role=OrganizationUser.OrganizationUserRole.Admin)
         data = serializer.data
         data['role'] = ChoiceField(choices=OrganizationUser.OrganizationUserRole.choices).to_representation(org_user.role)
         response = Response(data, status=status.HTTP_201_CREATED)
@@ -179,6 +176,8 @@ class OrganizationUserList(APIView):
             instance = OrganizationUser.objects.create(org=user_org.org, role=role, user=user)
             serializer = OrganizationUserSerializer(instance)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class OrganizationUserDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -246,21 +245,21 @@ class OrgApplicationList(APIView):
 class OrgApplicationDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    def get_object(self, org, app_name, for_update=False):
+    def get_object(self, org_name, app_name, for_update=False):
         try:
-            return Application.objects.get(org=org, name=app_name)
+            return Application.objects.get(org__name=org_name, name=app_name)
         except Application.DoesNotExist:
             raise Http404
 
     def get(self, request, org_name, app_name):
-        user_org = check_org_view_permission(org_name, request.user)
-        app = self.get_object(user_org.org, app_name)
+        check_org_view_permission(org_name, request.user)
+        app = self.get_object(org_name, app_name)
         serializer = OrgApplicationSerializer(app, context={'request': request})
         return Response(serializer.data)
 
     def put(self, request, org_name, app_name):
         user_org = check_org_admin_permission(org_name, request.user)
-        app = self.get_object(user_org.org, app_name)
+        app = self.get_object(user_org.org.name, app_name)
         serializer = OrgApplicationSerializer(app, data=request.data, partial=True, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -275,7 +274,7 @@ class OrgApplicationDetail(APIView):
 
     def delete(self, request, org_name, app_name):
         user_org = check_org_admin_permission(org_name, request.user)
-        app = self.get_object(user_org.org, app_name)
+        app = self.get_object(user_org.org.name, app_name)
         # todo: check users, delete related object
         app.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

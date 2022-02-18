@@ -105,8 +105,10 @@ class StoreAppSerializer(NonNullModelSerializer):
 class StoreAppVivoAuthSerializer(serializers.Serializer):
     access_key = serializers.CharField()
     access_secret = serializers.CharField()
+    vivo_store_app_id = serializers.CharField()
+    store_link = serializers.URLField()
     class Meta:
-        fields = ['access_key', 'access_secret']
+        fields = ['access_key', 'access_secret', 'vivo_store_app_id', 'store_link']
 
 class ReleaseStoreSerializer(NonNullModelSerializer):
     class Meta:

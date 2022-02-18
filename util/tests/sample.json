@@ -1,0 +1,329 @@
+{
+    "users": [
+        {
+            "username": "BillGates",
+            "first_name": "Bill",
+            "last_name": "Gates",
+            "icon_file": "https://i.guim.co.uk/img/media/43de83936de69e99c2251f371442f9cb00cbbedd/0_2242_8700_5220/master/8700.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=c1f12f3a1de5392d84170ee0ddcc1539",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "microsoft"
+                }
+            ]
+        }, {
+            "username": "SatyaNadella",
+            "first_name": "Satya",
+            "last_name": "Nadella",
+            "icon_file": "https://pbs.twimg.com/profile_images/1221837516816306177/_Ld4un5A_400x400.jpg",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "microsoft"
+                }
+            ]
+        }, {
+            "username": "SteveBallmer",
+            "first_name": "Steve",
+            "last_name": "Ballmer",
+            "icon_file": "https://images.squarespace-cdn.com/content/v1/5a1340ef914e6bf3c0764c0c/1536789061425-UG7GTFM3MYOLK0VM2L41/Steve+Ballmer_Randell_Walton_Photography_7R7A3416-Edit_edited.jpg?format=1000w",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "microsoft"
+                }
+            ]
+        }, {
+            "username": "LarryPage",
+            "first_name": "Larry",
+            "last_name": "Page",
+            "icon_file": "",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "google"
+                }
+            ]
+        }, {
+            "username": "SergeyBrin",
+            "first_name": "Sergey",
+            "last_name": "Brin",
+            "icon_file": "",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "google"
+                }
+            ]
+        }, {
+            "username": "MarkZuckerberg",
+            "first_name": "Mark",
+            "last_name": "Zuckerberg",
+            "icon_file": "",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "meta"
+                }
+            ]
+        }, {
+            "username": "NatFriedman",
+            "first_name": "Nat",
+            "last_name": "Friedman",
+            "icon_file": "",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "github"
+                }
+            ]
+        }, {
+            "username": "SteveJobs",
+            "first_name": "Steve",
+            "last_name": "Jobs",
+            "icon_file": "",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "apple"
+                }
+            ]
+        }, {
+            "username": "PonyMa",
+            "first_name": "马",
+            "last_name": "化腾",
+            "icon_file": "",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "tencent"
+                }
+            ]
+        }, {
+            "username": "RobinLi",
+            "first_name": "李",
+            "last_name": "彦宏",
+            "icon_file": "",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "baidu"
+                }
+            ]
+        }, {
+            "username": "JackMa",
+            "first_name": "马",
+            "last_name": "云",
+            "icon_file": "",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "alibaba"
+                }
+            ]
+        }, {
+            "username": "ZhangYiming",
+            "first_name": "张",
+            "last_name": "一鸣",
+            "icon_file": "",
+            "orgs": [
+                {
+                    "role": "Admin",
+                    "name": "bytedance"
+                }
+            ]
+        }
+    ],
+    "orgs": [
+        {
+            "name": "microsoft",
+            "display_name": "Microsoft Corporation",
+            "visibility": "Public",
+            "icon_file": "microsoft.png",
+            "icon_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/2048px-Microsoft_logo.svg.png",
+            "description": "Microsoft Corporation is an American multinational technology corporation which produces computer software, consumer electronics, personal computers, and related services.",
+            "apps": [
+                "MicrosoftAccessoryUpdater",
+                "AzureVPNClient",
+                "MicrosoftToDo",
+                "MicrosoftPowerPoint",
+                "MicrosoftOutlook",
+                "MicrosoftWord",
+                "MicrosoftExcel",
+                "MicrosoftRemoteDesktop",
+                "RMSSharing",
+                "MicrosoftOneNote",
+                "OneDrive"
+            ]
+        }, {
+            "name": "google",
+            "display_name": "Google LLC",
+            "visibility": "Public",
+            "icon_file": "google.webp",
+            "icon_url": "https://is5-ssl.mzstatic.com/image/thumb/Purple116/v4/6e/12/b8/6e12b8ab-e522-5650-2bd4-fa93cef701b2/logo_gsa_ios_color-0-1x_U007emarketing-0-0-0-6-0-0-0-85-220-0.png/512x0w.webp",
+            "description": "Google LLC is an American multinational technology company that specializes in Internet-related services and products, which include online advertising technologies, a search engine, cloud computing, software, and hardware. ",
+            "apps": [
+                "google",
+                "chrome",
+                "googlemaps",
+                "googledrive",
+                "googleearth",
+                "googleone",
+                "ScreenwiseMeter",
+                "youtube",
+                "googlephotos",
+                "googlesheets",
+                "googledocs",
+                "gmail",
+                "googletranslate"
+            ]
+        }, {
+            "name": "meta",
+            "display_name": "Meta Platforms",
+            "visibility": "Public",
+            "icon_file": "meta.webp",
+            "icon_url": "https://static.dezeen.com/uploads/2021/11/meta-facebook-rebranding-name-news_dezeen_2364_col_sq.jpg",
+            "description": "Meta Platforms, Inc.,[13][14] doing business as Meta[15] and formerly known as Facebook, Inc.,[16] is an American multinational technology conglomerate based in Menlo Park, California."
+        }, {
+            "name": "github",
+            "display_name": "GitHub, Inc",
+            "visibility": "Public",
+            "icon_file": "github.png",
+            "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            "description": "GitHub, Inc. is a provider of Internet hosting for software development and version control using Git."
+        }, {
+            "name": "apple",
+            "display_name": "Apple Inc",
+            "visibility": "Public",
+            "icon_url": "",
+            "description": "Apple Inc. is an American multinational technology company that specializes in consumer electronics, software and online services."
+        }, {
+            "name": "tencent",
+            "display_name": "腾讯",
+            "visibility": "Public",
+            "icon_file": "tencent.png",
+            "icon_url": "https://logodix.com/logo/20805.png",
+            "description": "腾讯控股有限公司（英语：Tencent Holdings Limited），简称腾讯，是中国一家跨国企业控股公司，为中国大陆规模最大的互联网公司，1998年11月由马化腾、张志东、陈一丹、许晨晔、曾李青5位创始人共同创立，公司注册于开曼群岛，总部位于深圳南山区腾讯滨海大厦。"
+        }, {
+            "name": "baidu",
+            "display_name": "百度",
+            "visibility": "Public",
+            "icon_url": "",
+            "description": "百度公司（简称百度，英语：Baidu）是一家主要经营搜索引擎服务的中国互联网公司，于2000年1月1日由李彦宏、徐勇两人创立于北京中关村。"
+        }, {
+            "name": "alibaba",
+            "display_name": "阿里巴巴",
+            "visibility": "Public",
+            "icon_file": "alibaba.png",
+            "icon_url": "https://brandslogos.com/wp-content/uploads/images/large/alibaba-com-logo.png",
+            "description": "阿里巴巴集团（NYSE：BABA、港交所：9988）创立于1999年，是中国大陆一家以提供互联网服务为主的综合企业集团，目前实行位于杭州，上海与北京的双总部制度[6]。"
+        }, {
+            "name": "bytedance",
+            "display_name": "字节跳动",
+            "visibility": "Public",
+            "icon_file": "bytedance.jpeg",
+            "icon_url": "https://img.sj33.cn/uploads/202009/7-200913160953c5.jpg",
+            "description": "北京字节跳动科技有限公司，简称字节跳动，是一家位于中国北京的跨国互联网技术公司[2]，成立于2012年3月，旗下有产品今日头条和抖音（及其海外版本TikTok）等。"
+        }
+    ],
+    "apps": [
+        {
+            "name": "google",
+            "icon_file": "google.webp",
+            "display_name": "Google",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha",
+            "description": "The Google app keeps you in the know about things that matter to you. Find quick answers, explore your interests, and stay up to date with Discover."
+        }, {
+            "name": "chrome",
+            "display_name": "Google Chrome",
+            "icon_file": "chrome.webp",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha",
+            "description": "Download the fast, secure browser recommended by Google."
+        }, {
+            "name": "googlemaps",
+            "display_name": "Google Maps",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha",
+            "icon_file": "google_maps.webp",
+            "description": "Navigate your world faster and easier with Google Maps. "
+        }, {
+            "name": "googledrive",
+            "display_name": "Google Drive",
+            "icon_file": "google_drive.webp",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha",
+            "description": "Google Drive, part of Google Workspace, is a safe place to back up and access all your files from any device. Easily invite others to view, edit, or leave comments on any of your files or folders."
+        }, {
+            "name": "googleearth",
+            "display_name": "Google Earth",
+            "icon_file": "google_earth.webp",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha",
+            "description": "Explore the whole world from above with satellite imagery, 3D terrain of the entire globe, and 3D buildings in hundreds of cities around the world."
+        }, {
+            "name": "googleone",
+            "display_name": "Google One",
+            "icon_file": "google_one.webp",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha"
+        }, {
+            "name": "ScreenwiseMeter",
+            "display_name": "Screenwise Meter",
+            "icon_file": "screenwise_meter.webp",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha"
+        }, {
+            "name": "youtube",
+            "display_name": "Youtube",
+            "icon_file": "youtube.webp",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha"
+        }, {
+            "name": "googlephotos",
+            "display_name": "Google Photos",
+            "icon_file": "google_photos.webp",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha",
+            "description": "Google Photos is a smarter home for all your photos and videos, made for the way you take photos today."
+        }, {
+            "name": "googlesheets",
+            "display_name": "Google Sheets",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha",
+            "description": "Create, edit, and collaborate on spreadsheets with the Google Sheets app. "
+        }, {
+            "name": "googledocs",
+            "display_name": "Google Docs",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha"
+        }, {
+            "name": "gmail",
+            "display_name": "Gmail",
+            "icon_file": "gmail.webp",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha",
+            "description": "The official Gmail app brings the best of Gmail to your iPhone or iPad with robust security, real-time notifications, multiple account support, and search that works across all your mail."
+        }, {
+            "name": "googletranslate",
+            "display_name": "Google Translate",
+            "icon_file": "google_translate.webp",
+            "os": "iOS",
+            "platform": "ObjectiveCSwift",
+            "release_type": "Alpha"
+        }
+    ]
+}

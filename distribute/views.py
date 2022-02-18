@@ -204,7 +204,7 @@ class OrgAppReleaseDetail(APIView):
         release.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class OrgStoreAppRList(APIView):
+class OrgStoreAppList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request, org_name, app_name):
@@ -212,6 +212,71 @@ class OrgStoreAppRList(APIView):
         releases = StoreApp.objects.filter(app__org=user_org.org, app__name=app_name)
         serializer = StoreAppSerializer(releases, many=True, context={'request': request})
         return Response(serializer.data)
+
+class OrgStoreAppVivo(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, org_name, app_name):
+        check_org_admin_permission(org_name, request.user)
+        try:
+            store_app = StoreApp.objects.get(app__name=app_name, store=StoreApp.StoreType.Vivo)
+        except StoreApp.DoesNotExist:
+            raise Http404
+        serializer = StoreAppVivoAuthSerializer(store_app)
+        return Response(serializer.data)
+
+    def post(self, request, org_name, app_name):
+        user_org = check_org_admin_permission(org_name, request.user)
+        serializer = StoreAppVivoAuthSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            app = Application.objects.get(org=user_org.org, name=app_name)
+        except Application.DoesNotExist:
+            raise Http404
+        StoreApp.objects.create(app=app, store=StoreApp.StoreType.Vivo, auth_data=serializer.validated_data)
+        return Response(status=status.HTTP_201_CREATED)
+
+class OrgAppReleaseStoreStateList(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, org_name, app_name):
+        # filter: store, status ...
+        check_org_view_permission(org_name, request.user)
+        state_list = ReleaseStore.objects.filter(package__app__name=app_name)
+        serializer = ReleaseStoreSerializer(state_list, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    def post(self, request, org_name, app_name):
+        check_org_admin_permission(org_name, request.user)
+        serializer = ReleaseStoreCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        state = serializer.validated_data['state']
+        internal_build = serializer.validated_data['internal_build']
+        store = serializer.validated_data['store']
+        release_notes = serializer.validated_data['release_notes']
+
+        package = Package.objects.get(app__name=app_name, internal_build=internal_build)
+        store = StoreApp.objects.get(app__name=app_name, store=store)
+
+        if state == ReleaseStore.State.SubmitReview:
+            pass
+
+        ReleaseStore.objects.create(
+            package=package,
+            release_note=release_notes, 
+            store=store,
+            state=state,
+            operator=request.user)
+
+        return Response(status=status.HTTP_201_CREATED)
+
+
+class OrgAppReleaseStoreStateDetail(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+
 
 # Application
 

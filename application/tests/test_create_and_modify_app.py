@@ -1,5 +1,6 @@
 import tempfile
-from util.tests.client import ApiClient, UnitTestClient
+from util.tests.client import ApiClient
+from util.tests.unit_test_client import UnitTestClient
 from util.tests.case import BaseTestCase
 
 

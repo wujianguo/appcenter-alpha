@@ -1,4 +1,3 @@
-from email.policy import default
 import uuid, hashlib
 from django.db import models
 from django.db.models.signals import post_save
@@ -88,6 +87,7 @@ class StoreApp(models.Model):
         AppStore = 2
         GooglePlay = 3
         MicrosoftStore = 4
+        Vivo = 5
 
         def display_name(self):
             return ''
@@ -107,6 +107,7 @@ class ReleaseStore(models.Model):
         ReviewRejected = 4
         Released = 5
 
+    release_store_id = models.IntegerField()
     package = models.ForeignKey(Package, on_delete=models.CASCADE)
     release_notes = models.CharField(max_length=1024, help_text="The release's release notes.")
     store = models.ForeignKey(StoreApp, on_delete=models.CASCADE)

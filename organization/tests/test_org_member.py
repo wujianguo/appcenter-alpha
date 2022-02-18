@@ -1,4 +1,5 @@
-from util.tests.client import ApiClient, UnitTestClient
+from util.tests.client import ApiClient
+from util.tests.unit_test_client import UnitTestClient
 from util.tests.case import BaseTestCase
 
 
@@ -52,6 +53,26 @@ class OrganizationMemberTest(BaseTestCase):
         r6 = jack.org.get_one(org['name'])
         self.assert_status_200(r6)
         self.assertEqual(r6.json()['role'], member['role'])
+
+    def test_multi_member(self):
+        org = self.generate_org(visibility='Public')
+        r1 = self.client.org.create(org)
+        self.assert_status_201(r1)
+        name = org['name']
+
+        r2 = self.client.org.get_one(org['name'])
+        self.assertDictEqual(r1.json(), r2.json())
+
+        r = self.client.org.get_member(name, 'xyz')
+        self.assert_status_404(r)
+
+        jack: ApiClient = ApiClient(UnitTestClient('/api/', 'jack'))
+        member = {'username': 'jack', 'role': 'Collaborator'}
+        r4 = self.client.org.add_member(name, member)
+        self.assert_status_201(r4)
+
+        r = jack.org.get_app_list(org['name'])
+        self.assert_status_200(r)
 
     def test_modify_member_role(self):
         org = self.generate_org()

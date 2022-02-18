@@ -646,7 +646,7 @@ reserved_names = {
   "gift",
   "gifts",
   "gist",
-  "github",
+  # "github",
   "graph",
   "group",
   "groups",
