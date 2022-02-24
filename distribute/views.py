@@ -243,7 +243,7 @@ class OrgAppReleaseStoreStateList(APIView):
     def get(self, request, org_name, app_name):
         # filter: store, status ...
         check_org_view_permission(org_name, request.user)
-        state_list = ReleaseStore.objects.filter(package__app__name=app_name)
+        state_list = ReleaseStore.objects.filter(package__app__name=app_name, package__app__org__name=org_name)
         serializer = ReleaseStoreSerializer(state_list, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -275,6 +275,13 @@ class OrgAppReleaseStoreStateList(APIView):
 
 class OrgAppReleaseStoreStateDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request, org_name, app_name, release_store_id):
+        check_org_admin_permission(org_name, request.user)
+        try:
+            ReleaseStore.objects.get(release_store_id=release_store_id, package__app__name=app_name, package__app__org__name=org_name)
+        except ReleaseStore.DoesNotExist:
+            raise Http404
 
 
 

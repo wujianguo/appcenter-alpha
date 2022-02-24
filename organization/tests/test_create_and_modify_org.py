@@ -1,268 +1,251 @@
 import tempfile
-from util.tests.client import ApiClient
-from util.tests.unit_test_client import UnitTestClient
+from client.api import Api
+from client.client import UnitTestClient
 from util.tests.case import BaseTestCase
 
 class OrganizationCreateTest(BaseTestCase):
 
-    def setUp(self):
-        super().setUp()
-        self.client: ApiClient = ApiClient(UnitTestClient('/api/', 'admin'))
-        self.org_index = 0
-
-    def generate_org(self):
-        self.org_index += 1
-        org = {
-            'name': 'org_name_' + str(self.org_index),
-            'display_name': 'org_display_name_' + str(self.org_index),
-            'visibility': 'Private'
-        }
-        return org
+    def create_org(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+        org_name = org['name']
+        return api.get_org_api(org_name)
 
     def test_create_success(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        ret = {
-            'name': r1.json()['name'],
-            'display_name': r1.json()['display_name'],
-            'visibility': r1.json()['visibility']
-        }
-        self.assertDictEqual(ret, org)
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+        self.assert_partial_dict_equal(org, r.json(), ['name', 'display_name', 'visibility', 'description'])
+        org_name = org['name']
 
-        r2 = self.client.org.get_one(org['name'])
-        self.assertDictEqual(r1.json(), r2.json())
+        r2 = api.get_org_api(org_name).get_org()
+        self.assertDictEqual(r.json(), r2.json())
 
-        r3 = self.client.org.get_list()
-        self.assertDictEqual(r3.json()[0], r1.json())
+        r3 = api.get_user_api().get_org_list()
+        self.assertDictEqual(r3.json()[0], r.json())
 
     def test_invalid_name(self):
         # 1. only letters, numbers, underscores or hyphens
         # 2. 0 < len(name) <= 32
-        org = self.generate_org()
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
         org['name'] += '*'
-        r1 = self.client.org.create(org)
-        self.assert_status_400(r1)
+        user_api = api.get_user_api()
+        r = user_api.create_org(org)
+        self.assert_status_400(r)
 
         max_length = 32
         org['name'] = 'a' * max_length
-        r2 = self.client.org.create(org)
-        self.assert_status_201(r2)
+        r = user_api.create_org(org)
+        self.assert_status_201(r)
 
         org['name'] = 'a' * max_length + 'a'
-        r3 = self.client.org.create(org)
-        self.assert_status_400(r3)
+        r = user_api.create_org(org)
+        self.assert_status_400(r)
 
         org['name'] = ''
-        r4 = self.client.org.create(org)
-        self.assert_status_400(r4)
+        r = user_api.create_org(org)
+        self.assert_status_400(r)
 
         del org['name']
-        r5 = self.client.org.create(org)
-        self.assert_status_400(r5)
+        r = user_api.create_org(org)
+        self.assert_status_400(r)
 
     def test_duplicate_name(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
+        api.get_user_api().create_org(org)
 
-        org2 = self.generate_org()
+        org2 = self.microsoft_org()
         org2['name'] = org['name']
-        r2 = self.client.org.create(org2)
-        self.assert_status_409(r2)
+        r =  api.get_user_api().create_org(org2)
+        self.assert_status_409(r)
 
     def test_required(self):
-        org = self.generate_org()
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
         del org['name']
-        r1 = self.client.org.create(org)
-        self.assert_status_400(r1)
+        r = api.get_user_api().create_org(org)
+        self.assert_status_400(r)
         
-        org2 = self.generate_org()
-        del org2['display_name']
-        r2 = self.client.org.create(org2)
-        self.assert_status_400(r2)
+        org = self.google_org()
+        del org['display_name']
+        r = api.get_user_api().create_org(org)
+        self.assert_status_400(r)
 
-        org3 = self.generate_org()
-        del org3['visibility']
-        r3 = self.client.org.create(org3)
-        self.assert_status_400(r3)
+        org = self.google_org()
+        del org['visibility']
+        r = api.get_user_api().create_org(org)
+        self.assert_status_400(r)
 
     def test_invalid_display_name(self):
         # 0 < len(display_name) <= 32
-        org = self.generate_org()
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
+
         max_length = 128
         org['display_name'] = 'a' * max_length
-        r2 = self.client.org.create(org)
-        self.assert_status_201(r2)
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
 
         org['display_name'] = 'a' * max_length + 'a'
-        r3 = self.client.org.create(org)
-        self.assert_status_400(r3)
+        r = api.get_user_api().create_org(org)
+        self.assert_status_400(r)
 
         org['display_name'] = ''
-        r4 = self.client.org.create(org)
-        self.assert_status_400(r4)
+        r = api.get_user_api().create_org(org)
+        self.assert_status_400(r)
 
     def test_visibility(self):
-        org = self.generate_org()
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
+
         org['visibility'] = 'a'
-        r2 = self.client.org.create(org)
-        self.assert_status_400(r2)
+        r = api.get_user_api().create_org(org)
+        self.assert_status_400(r)
 
         allow_visibility = ['Private', 'Internal', 'Public']
         for visibility in allow_visibility:
-            org = self.generate_org()
+            org = self.google_org()
+            org['name'] += visibility
             org['visibility'] = visibility
-            r = self.client.org.create(org)
+            r = api.get_user_api().create_org(org)
             self.assert_status_201(r)
 
     def test_modify_org_name(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
+
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+        old_value = r.json()
+
+        org_name = org['name']
 
         new_name = 'new_name'
         data = {'name': new_name}
-        r2 = self.client.org.modify(org['name'], data)
-        self.assert_status_200(r2)
+        org_api = api.get_org_api(org_name)
+        r = org_api.update_org(data)
+        self.assert_status_200(r)
 
-        r3 = self.client.org.get_one(org['name'])
-        self.assert_status_404(r3)
+        r = org_api.get_org()
+        self.assert_status_404(r)
 
-        r4 = self.client.org.get_one(new_name)
-        self.assert_status_200(r4)
-        old_value = r1.json()
+        r = api.get_org_api(new_name).get_org()
+        self.assert_status_200(r)
+
         old_value['name'] = new_name
         del old_value['update_time']
-        new_value = r4.json()
+        new_value = r.json()
         del new_value['update_time']
         self.assertDictEqual(new_value, old_value)
 
     def test_modify_invalid_name(self):
         # 1. only letters, numbers, underscores or hyphens
         # 2. 0 < len(name) <= 32
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
+        org_api = self.create_org()
 
         max_length = 32
         new_name = 'a' * max_length + 'a'
-        r3 = self.client.org.modify(name, {'name': new_name})
-        self.assert_status_400(r3)
+        r = org_api.update_org({'name': new_name})
+        self.assert_status_400(r)
 
         new_name = ''
-        r4 = self.client.org.modify(name, {'name': new_name})
-        self.assert_status_400(r4)
+        r = org_api.update_org({'name': new_name})
+        self.assert_status_400(r)
 
         new_name = 'a' * max_length
-        r2 = self.client.org.modify(name, {'name': new_name})
-        self.assert_status_200(r2)
+        r = org_api.update_org({'name': new_name})
+        self.assert_status_200(r)
 
     def test_modify_duplicate_name(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
-        r2 = self.client.org.modify(name, {'name': name})
-        self.assert_status_200(r2)
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
 
-        org2 = self.generate_org()
-        r3 = self.client.org.create(org2)
-        self.assert_status_201(r3)
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+
+        org_name = org['name']
+        org_api = api.get_org_api(org_name)
+
+        name = org['name']
+        r = org_api.update_org({'name': name})
+        self.assert_status_200(r)
+
+        org2 = self.microsoft_org()
+        r = api.get_user_api().create_org(org2)
+        self.assert_status_201(r)
         new_name = org2['name']
-        r4 = self.client.org.modify(name, {'name': new_name})
-        self.assert_status_409(r4)
+        r = org_api.update_org({'name': new_name})
+        self.assert_status_409(r)
 
     def test_modify_org_display_name(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
+        org_api = self.create_org()
 
         max_length = 128
         display_name = 'a' * max_length
-        r2 = self.client.org.modify(name, {'display_name': display_name})
-        self.assert_status_200(r2)
+        r = org_api.update_org({'display_name': display_name})
+        self.assert_status_200(r)
 
         display_name = 'a' * max_length + 'a'
-        r3 = self.client.org.modify(name, {'display_name': display_name})
-        self.assert_status_400(r3)
+        r = org_api.update_org({'display_name': display_name})
+        self.assert_status_400(r)
 
         display_name = ''
-        r4 = self.client.org.modify(name, {'display_name': display_name})
-        self.assert_status_400(r4)
+        r = org_api.update_org({'display_name': display_name})
+        self.assert_status_400(r)
 
     def test_modify_org_visibility(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
+        org_api = self.create_org()
 
         visibility = 'a'
-        r2 = self.client.org.modify(name, {'visibility': visibility})
-        self.assert_status_400(r2)
+        r = org_api.update_org({'visibility': visibility})
+        self.assert_status_400(r)
 
         allow_visibility = ['Private', 'Internal', 'Public']
         for visibility in allow_visibility:
             visibility = visibility
-            r = self.client.org.modify(name, {'visibility': visibility})
+            r = org_api.update_org({'visibility': visibility})
             self.assert_status_200(r)
 
     def test_upload_icon(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
+        org_api = self.create_org()
 
-        r2 = self.client.org.change_or_set_icon('xyz')
-        self.assert_status_404(r2)
-        r2 = self.client.org.change_or_set_icon(name)
+        r = org_api.change_or_set_icon()
+        self.assert_status_200(r)
+        self.assertNotEqual(r.json()['icon_file'], '')
+
+        r2 = org_api.change_or_set_icon()
         self.assert_status_200(r2)
+        self.assertNotEqual(r2.json()['icon_file'], r.json()['icon_file'])
         self.assertNotEqual(r2.json()['icon_file'], '')
-
-        r3 = self.client.org.change_or_set_icon(name)
-        self.assert_status_200(r3)
-        self.assertNotEqual(r3.json()['icon_file'], r2.json()['icon_file'])
-        self.assertNotEqual(r3.json()['icon_file'], '')
 
         file = tempfile.NamedTemporaryFile(suffix='.jpg')
         file.write(b'hello')
         file_path = file.name
-        r4 = self.client.org.change_or_set_icon(name, file_path)
-        self.assert_status_400(r4)
-
+        r = org_api.change_or_set_icon(file_path)
+        self.assert_status_400(r)
 
     def test_delete_icon(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
+        org_api = self.create_org()
 
-        r2 = self.client.org.change_or_set_icon(name)
-        self.assert_status_200(r2)
-        self.assertNotEqual(r2.json()['icon_file'], '')
+        r = org_api.change_or_set_icon()
+        self.assert_status_200(r)
 
-        r3 = self.client.org.delete_icon(name)
-        self.assert_status_204(r3)
+        r = org_api.remove_icon()
+        self.assert_status_204(r)
 
-        r4 = self.client.org.get_one(name)
-        self.assertEqual(r4.json()['icon_file'], '')
+        r = org_api.get_org()
+        self.assertEqual(r.json()['icon_file'], '')
 
     def test_delete_org(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
+        org_api = self.create_org()
 
-        r2 = self.client.org.delete(name)
-        self.assert_status_204(r2)
+        r = org_api.remove_org()
+        self.assert_status_204(r)
 
-        r3 = self.client.org.get_one(name)
-        self.assert_status_404(r3)
-
-    # def test_transfer_org(self):
-    #     pass
-
-    # def test_leave_org(self):
-    #     pass
+        r = org_api.get_org()
+        self.assert_status_404(r)

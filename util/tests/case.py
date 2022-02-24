@@ -4,14 +4,11 @@ from django.test import TestCase
 class BaseTestCase(TestCase):
 
     def setUp(self):
-        try:
-            db_path = 'db.sqlite3'
-            db_bak_path = 'db_bak.sqlite3'
-            if os.path.exists(db_path):
-                os.remove(db_path)
+        db_path = 'db.sqlite3'
+        db_bak_path = 'downloads/db_bak.sqlite3'
+        if os.path.exists(db_path) and os.path.exists(db_bak_path):
+            os.remove(db_path)
             shutil.copyfile(db_bak_path, db_path)
-        except:
-            pass
 
     def get_message(self, resp):
         try:
@@ -48,3 +45,37 @@ class BaseTestCase(TestCase):
 
     def assert_list_length(self, resp, length):
         self.assertEqual(len(resp.json()), length)
+
+    def assert_partial_dict_equal(self, dict1, dict2, keys):
+        dict11 = {}
+        dict22 = {}
+        for key in keys:
+            dict11[key] = dict1[key]
+            dict22[key] = dict2[key]
+        self.assertDictEqual(dict11, dict22)
+
+    def get_resp_list(self, r):
+        return r.json()['data']
+
+    def google_org(self, visibility='Public'):
+        return {
+            "name": "google",
+            "display_name": "Google LLC",
+            "visibility": visibility,
+            "description": "Google LLC is an American multinational technology company that specializes in Internet-related services and products, which include online advertising technologies, a search engine, cloud computing, software, and hardware." 
+        }
+
+    def microsoft_org(self, visibility='Public'):
+        return {
+            "name": "microsoft",
+            "display_name": "Microsoft Corporation",
+            "visibility": visibility,
+            "description": "Microsoft Corporation is an American multinational technology corporation which produces computer software, consumer electronics, personal computers, and related services."
+        }
+
+    def generate_org(self, index, visibility='Public'):
+        return {
+            "name": "generated_org_" + str(index),
+            "display_name": "Generated Organization " + str(index),
+            "visibility": visibility,
+        }

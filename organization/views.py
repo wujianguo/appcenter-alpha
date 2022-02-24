@@ -49,6 +49,7 @@ class OrganizationList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request):
+        # order, filter, search
         if request.user.is_authenticated:
             allow_visibility = [VisibilityType.Public, VisibilityType.Internal]
             q1 = Q(org__visibility__in=allow_visibility)
