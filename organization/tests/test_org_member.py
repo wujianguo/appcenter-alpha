@@ -1,204 +1,705 @@
-from util.tests.client import ApiClient
-from util.tests.unit_test_client import UnitTestClient
+from client.api import Api
+from client.client import UnitTestClient
 from util.tests.case import BaseTestCase
-
 
 class OrganizationMemberTest(BaseTestCase):
 
-    def setUp(self):
-        super().setUp()
-        self.client: ApiClient = ApiClient(UnitTestClient('/api/', 'admin'))
-        self.org_index = 0
-
-    def generate_org(self, visibility='Private'):
-        self.org_index += 1
-        org = {
-            'name': 'org_name_' + str(self.org_index),
-            'display_name': 'org_display_name_' + str(self.org_index),
-            'visibility': visibility
-        }
-        return org
+    def create_org(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org()
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+        org_name = org['name']
+        return api.get_org_api(org_name)
 
     def test_add_member(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org('Private')
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+        org_name = org['name']
+        org_api = api.get_org_api(org_name)
 
-        r2 = self.client.org.get_one(org['name'])
-        self.assertDictEqual(r1.json(), r2.json())
-
-        r = self.client.org.get_member(name, 'xyz')
+        r = org_api.get_member('xyz')
         self.assert_status_404(r)
 
-        jack: ApiClient = ApiClient(UnitTestClient('/api/', 'jack'))
-        r3 = jack.org.get_one(org['name'])
-        self.assert_status_404(r3)
-
-        member = {'username': 'jack', 'role': 'xyz'}
-        r = self.client.org.add_member(name, member)
-        self.assert_status_400(r)
-        member = {'username': 'jackxxx', 'role': 'Collaborator'}
-        r = self.client.org.add_member(name, member)
-        self.assert_status_400(r)
-        member = {'username': 'jack', 'role': 'Collaborator'}
-        r4 = self.client.org.add_member(name, member)
-        self.assert_status_201(r4)
-        r5 = self.client.org.get_member(name, member['username'])
-        self.assert_status_200(r5)
-        self.assertEqual(r5.json()['username'], member['username'])
-        self.assertEqual(r5.json()['role'], member['role'])
-        r = self.client.org.add_member(name, member)
-        self.assert_status_409(r)
-        r6 = jack.org.get_one(org['name'])
-        self.assert_status_200(r6)
-        self.assertEqual(r6.json()['role'], member['role'])
-
-    def test_multi_member(self):
-        org = self.generate_org(visibility='Public')
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
-
-        r2 = self.client.org.get_one(org['name'])
-        self.assertDictEqual(r1.json(), r2.json())
-
-        r = self.client.org.get_member(name, 'xyz')
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        r = bill.get_org_api(org_name).get_org()
         self.assert_status_404(r)
 
-        jack: ApiClient = ApiClient(UnitTestClient('/api/', 'jack'))
-        member = {'username': 'jack', 'role': 'Collaborator'}
-        r4 = self.client.org.add_member(name, member)
-        self.assert_status_201(r4)
-
-        r = jack.org.get_app_list(org['name'])
+        r = org_api.add_member('BillGates', 'xyz')
+        self.assert_status_400(r)
+        r = org_api.add_member('jackxxx', 'Collaborator')
+        self.assert_status_400(r)
+        r = org_api.add_member('BillGates', 'Collaborator')
+        self.assert_status_201(r)
+        r = org_api.get_member('BillGates')
         self.assert_status_200(r)
+        self.assertEqual(r.json()['username'], 'BillGates')
+        self.assertEqual(r.json()['role'], 'Collaborator')
+
+        r = org_api.add_member('BillGates', 'Collaborator')
+        self.assert_status_409(r)
+
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+        self.assertEqual(r.json()['role'], 'Collaborator')
+        r = bill.get_user_api().get_org_list()
+        self.assert_list_length(r, 1)
 
     def test_modify_member_role(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org('Private')
+        api.get_user_api().create_org(org)
+        org_name = org['name']
+        org_api = api.get_org_api(org_name)
 
-        r2 = self.client.org.get_one(name)
-        self.assertDictEqual(r1.json(), r2.json())
-
-        r = self.client.org.change_member_role(name, 'admin', 'xyz')
+        r = org_api.change_member_role('LarryPage', 'xyz')
         self.assert_status_400(r)
 
-        r = self.client.org.change_member_role(name, 'admin', 'Collaborator')
+        r = org_api.change_member_role('LarryPage', 'Collaborator')
         self.assert_status_403(r)
 
-        jack: ApiClient = ApiClient(UnitTestClient('/api/', 'jack'))
-        r3 = jack.org.get_one(org['name'])
-        self.assert_status_404(r3)
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_404(r)
 
-        member = {'username': 'jack', 'role': 'Admin'}
-        r4 = self.client.org.add_member(name, member)
-        self.assert_status_201(r4)
-        r5 = jack.org.get_one(name)
-        self.assertEqual(r5.json()['role'], member['role'])
-        r = self.client.org.change_member_role(name, 'admin', 'Collaborator')
+        r = org_api.add_member('BillGates', 'Admin')
+        self.assert_status_201(r)
+        r = bill.get_org_api(org_name).get_org()
+        self.assertEqual(r.json()['role'], 'Admin')
+        r = org_api.change_member_role('BillGates', 'Collaborator')
         self.assert_status_200(r)
-        r6 = self.client.org.change_or_set_icon(name)
-        self.assert_status_403(r6)
-        # todo: Collaborator can upload package
-        r = jack.org.change_member_role(name, 'admin', 'Admin')
+        r = bill.get_org_api(org_name).change_or_set_icon()
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('BillGates', 'Admin')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+
+        r = org_api.change_member_role('BillGates', 'Member')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_or_set_icon()
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('BillGates', 'Admin')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+
+        r = org_api.change_member_role('BillGates', 'Admin')
         self.assert_status_200(r)
 
-        r7 = self.client.org.change_member_role(name, member['username'], 'Member')
-        self.assert_status_200(r7)
-        # todo: Member can not upload package
+        r = bill.get_org_api(org_name).change_or_set_icon()
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
 
     def test_remove_member(self):
-        org = self.generate_org()
-        r1 = self.client.org.create(org)
-        self.assert_status_201(r1)
-        name = org['name']
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.google_org('Private')
+        api.get_user_api().create_org(org)
+        org_name = org['name']
+        org_api = api.get_org_api(org_name)
 
-        r2 = self.client.org.get_one(org['name'])
-        self.assertDictEqual(r1.json(), r2.json())
-        r = self.client.org.remove_member(org['name'], 'admin')
+        r = org_api.remove_member('LarryPage')
         self.assert_status_403(r)
 
-        jack: ApiClient = ApiClient(UnitTestClient('/api/', 'jack'))
-        r3 = jack.org.get_one(org['name'])
-        self.assert_status_404(r3)
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_404(r)
 
-        member = {'username': 'jack', 'role': 'Admin'}
-        r4 = self.client.org.add_member(name, member)
-        self.assert_status_201(r4)
-        r5 = self.client.org.get_member(name, member['username'])
-        self.assert_status_200(r5)
+        r = org_api.add_member('BillGates', 'Admin')
+        self.assert_status_201(r)
+        r = org_api.get_member('BillGates')
+        self.assert_status_200(r)
 
-        r6 = jack.org.get_one(org['name'])
-        self.assert_status_200(r6)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
 
-        r = jack.org.remove_member(org['name'], 'admin')
+        r = bill.get_org_api(org_name).remove_member('LarryPage')
         self.assert_status_204(r)
 
-        r8 = self.client.org.get_one(org['name'])
-        self.assert_status_404(r8)
+        r = org_api.get_org()
+        self.assert_status_404(r)
 
-    def test_multi_member_multi_org(self):
-        admin = self.client
-        anonymous_user = ApiClient(UnitTestClient('/api/'))
-
-
-        org1 = self.generate_org('Private')
-        r = admin.org.create(org1)
+        r = bill.get_org_api(org_name).add_member('LarryPage', 'Admin')
         self.assert_status_201(r)
 
-        org2 = self.generate_org('Internal')
-        r = admin.org.create(org2)
+        r = api.get_org_api(org_name).remove_member('LarryPage')
+        self.assert_status_204(r)
+
+    def test_get_public_member_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Public')
+        org_name = org['name']
+        r = api.get_user_api().create_org(org)
         self.assert_status_201(r)
 
-        org3 = self.generate_org('Public')
-        r = admin.org.create(org3)
-        self.assert_status_201(r)
+        r = api.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
 
-        jack: ApiClient = ApiClient(UnitTestClient('/api/', 'jack'))
-        paul: ApiClient = ApiClient(UnitTestClient('/api/', 'paul'))
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Admin')
 
-        org4 = self.generate_org('Private')
-        r = jack.org.create(org4)
-        self.assert_status_201(r)
-
-        org5 = self.generate_org('Internal')
-        r = jack.org.create(org5)
-        self.assert_status_201(r)
-
-        org6 = self.generate_org('Public')
-        r = jack.org.create(org6)
-        self.assert_status_201(r)
-
-
-        r = admin.org.get_list()
-        self.assert_list_length(r, 5)
-
-        r = jack.org.get_list()
-        self.assert_list_length(r, 5)
-
-        r = paul.org.get_list()
-        self.assert_list_length(r, 4)
-
-        r = anonymous_user.org.get_list()
+        r = bill.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
         self.assert_list_length(r, 2)
 
-        paul2: ApiClient = ApiClient(UnitTestClient('/api/', 'paul2'))
-        paul3: ApiClient = ApiClient(UnitTestClient('/api/', 'paul3'))
+        api.get_org_api(org_name).change_member_role('BillGates', 'Collaborator')
+        r = bill.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
 
-        admin.org.add_member(org1['name'], {'username': 'jack', 'role': 'Collaborator'})
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
 
-        # todo
-        # admin.org.add_member(org2['name'], {'username': 'paul2', 'role': 'Admin'})
-        # admin.org.add_member(org2['name'], {'username': 'paul3', 'role': 'Member'})
+        mark: Api = Api(UnitTestClient('/api'), 'MarkZuckerberg', True)
+        r = mark.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = mark.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
 
-        r = jack.org.get_list()
-        self.assert_list_length(r, 6)
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = anonymous.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
 
-        r = admin.org.get_list()
-        self.assert_list_length(r, 5)
+    def test_get_internal_member_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Internal')
+        org_name = org['name']
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
 
-        r = paul.org.get_list()
-        self.assert_list_length(r, 4)
+        r = api.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Admin')
+
+        r = bill.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Collaborator')
+        r = bill.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
+
+        mark: Api = Api(UnitTestClient('/api'), 'MarkZuckerberg', True)
+        r = mark.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = mark.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_404(r)
+        r = anonymous.get_org_api(org_name).get_member_list()
+        self.assert_status_404(r)
+
+    def test_get_private_member_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Private')
+        org_name = org['name']
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+
+        r = api.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Admin')
+
+        r = bill.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Collaborator')
+        r = bill.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).get_member_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 2)
+
+        mark: Api = Api(UnitTestClient('/api'), 'MarkZuckerberg', True)
+        r = mark.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_404(r)
+        r = mark.get_org_api(org_name).get_member_list()
+        self.assert_status_404(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).get_member('LarryPage')
+        self.assert_status_404(r)
+        r = anonymous.get_org_api(org_name).get_member_list()
+        self.assert_status_404(r)
+
+    def test_add_public_member_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Public')
+        org_name = org['name']
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Admin')
+
+        Api(UnitTestClient('/api'), 'member_admin', True)
+        r = bill.get_org_api(org_name).add_member('member_admin', 'Admin')
+        self.assert_status_201(r)
+        member_collaborator: Api = Api(UnitTestClient('/api'), 'member_collaborator', True)
+        r = bill.get_org_api(org_name).add_member('member_collaborator', 'Collaborator')
+        self.assert_status_201(r)
+        member_member: Api = Api(UnitTestClient('/api'), 'member_member', True)
+        r = bill.get_org_api(org_name).add_member('member_member', 'Member')
+        self.assert_status_201(r)
+
+        Api(UnitTestClient('/api'), 'member2', True)
+        r = member_collaborator.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_403(r)
+        r = member_collaborator.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_403(r)
+        r = member_collaborator.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_403(r)
+
+        Api(UnitTestClient('/api'), 'member3', True)
+        r = member_member.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_403(r)
+        r = member_member.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_403(r)
+        r = member_member.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_403(r)
+
+        member_internal: Api = Api(UnitTestClient('/api'), 'member_internal', True)
+        r = member_internal.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_403(r)
+        r = member_internal.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_403(r)
+        r = member_internal.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_403(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_401(r)
+        r = anonymous.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_401(r)
+        r = anonymous.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_401(r)
+
+    def test_add_internal_member_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Internal')
+        org_name = org['name']
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Admin')
+
+        Api(UnitTestClient('/api'), 'member_admin', True)
+        r = bill.get_org_api(org_name).add_member('member_admin', 'Admin')
+        self.assert_status_201(r)
+        member_collaborator: Api = Api(UnitTestClient('/api'), 'member_collaborator', True)
+        r = bill.get_org_api(org_name).add_member('member_collaborator', 'Collaborator')
+        self.assert_status_201(r)
+        member_member: Api = Api(UnitTestClient('/api'), 'member_member', True)
+        r = bill.get_org_api(org_name).add_member('member_member', 'Member')
+        self.assert_status_201(r)
+
+        Api(UnitTestClient('/api'), 'member2', True)
+        r = member_collaborator.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_403(r)
+        r = member_collaborator.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_403(r)
+        r = member_collaborator.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_403(r)
+
+        Api(UnitTestClient('/api'), 'member3', True)
+        r = member_member.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_403(r)
+        r = member_member.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_403(r)
+        r = member_member.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_403(r)
+
+        member_internal: Api = Api(UnitTestClient('/api'), 'member_internal', True)
+        r = member_internal.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_403(r)
+        r = member_internal.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_403(r)
+        r = member_internal.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_403(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_401(r)
+        r = anonymous.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_401(r)
+        r = anonymous.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_401(r)
+
+    def test_add_private_member_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Private')
+        org_name = org['name']
+        r = api.get_user_api().create_org(org)
+        self.assert_status_201(r)
+
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Admin')
+
+        Api(UnitTestClient('/api'), 'member_admin', True)
+        r = bill.get_org_api(org_name).add_member('member_admin', 'Admin')
+        self.assert_status_201(r)
+        member_collaborator: Api = Api(UnitTestClient('/api'), 'member_collaborator', True)
+        r = bill.get_org_api(org_name).add_member('member_collaborator', 'Collaborator')
+        self.assert_status_201(r)
+        member_member: Api = Api(UnitTestClient('/api'), 'member_member', True)
+        r = bill.get_org_api(org_name).add_member('member_member', 'Member')
+        self.assert_status_201(r)
+
+        Api(UnitTestClient('/api'), 'member2', True)
+        r = member_collaborator.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_403(r)
+        r = member_collaborator.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_403(r)
+        r = member_collaborator.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_403(r)
+
+        Api(UnitTestClient('/api'), 'member3', True)
+        r = member_member.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_403(r)
+        r = member_member.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_403(r)
+        r = member_member.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_403(r)
+
+        member_internal: Api = Api(UnitTestClient('/api'), 'member_internal', True)
+        r = member_internal.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_404(r)
+        r = member_internal.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_404(r)
+        r = member_internal.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_404(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).add_member('member2', 'Admin')
+        self.assert_status_401(r)
+        r = anonymous.get_org_api(org_name).add_member('member2', 'Collaborator')
+        self.assert_status_401(r)
+        r = anonymous.get_org_api(org_name).add_member('member2', 'Member')
+        self.assert_status_401(r)
+
+    def test_change_public_member_role_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Public')
+        org_name = org['name']
+        api.get_user_api().create_org(org)
+
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Collaborator')
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Admin')
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_200(r)
+
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Collaborator')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Admin')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).remove_member('BillGates')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_401(r)
+
+    def test_change_internal_member_role_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Internal')
+        org_name = org['name']
+        api.get_user_api().create_org(org)
+
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Collaborator')
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Admin')
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_200(r)
+
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Collaborator')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Admin')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).remove_member('BillGates')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_401(r)
+
+    def test_change_private_member_role_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Private')
+        org_name = org['name']
+        api.get_user_api().create_org(org)
+
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Collaborator')
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Admin')
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+        r = api.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_200(r)
+
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Collaborator')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_403(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Admin')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Member')
+        self.assert_status_200(r)
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Admin')
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).remove_member('BillGates')
+        r = bill.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_404(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).change_member_role('LarryPage', 'Collaborator')
+        self.assert_status_401(r)
+
+    def test_remove_member_permissions(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Public')
+        org_name = org['name']
+        api.get_user_api().create_org(org)
+
+        r = api.get_org_api(org_name).remove_member('LarryPage')
+        self.assert_status_403(r)
+
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Collaborator')
+        r = bill.get_org_api(org_name).remove_member('LarryPage')
+        self.assert_status_403(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_org_api(org_name).remove_member('LarryPage')
+        self.assert_status_403(r)
+
+        mark: Api = Api(UnitTestClient('/api'), 'MarkZuckerberg', True)
+        r = mark.get_org_api(org_name).remove_member('LarryPage')
+        self.assert_status_403(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_org_api(org_name).remove_member('LarryPage')
+        self.assert_status_401(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Admin')
+        r = bill.get_org_api(org_name).remove_member('LarryPage')
+        self.assert_status_204(r)

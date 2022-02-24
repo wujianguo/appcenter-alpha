@@ -2,7 +2,6 @@ from client.api import Api
 from client.client import UnitTestClient
 from util.tests.case import BaseTestCase
 
-
 class OrganizationListTest(BaseTestCase):
 
     def create_org(self):
@@ -72,9 +71,6 @@ class OrganizationListTest(BaseTestCase):
         for i in range(6):
             self.assertEqual(resp_org_list[i], org_list[i+30])
 
-    def test_order_by(self):
-        pass
-
     def xtest_multi_org_multi_member(self):
         larry: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
         org1 = self.generate_org(1, 'Public')
@@ -120,11 +116,134 @@ class OrganizationListTest(BaseTestCase):
         r = anonymous.get_user_api().get_org_list()
         self.assert_list_length(r, 2)
 
-    # def test_member_can_view_private(self):
-    #     pass
+    def test_order_by(self):
+        pass
 
-    # def test_login_user_can_view_internal(self):
-    #     pass
+    def test_filter(self):
+        pass
 
-    # def test_anonymous_can_view_public(self):
-    #     pass
+    def xtest_get_public_org_permission(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Public')
+        org_name = org['name']
+        api.get_user_api().create_org(org)
+        
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Admin')
+        r = bill.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Collaborator')
+        r = bill.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        mark: Api = Api(UnitTestClient('/api'), 'MarkZuckerberg', True)
+        r = mark.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = mark.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = anonymous.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+    def xtest_get_internal_org_permission(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Internal')
+        org_name = org['name']
+        api.get_user_api().create_org(org)
+        
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Admin')
+        r = bill.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Collaborator')
+        r = bill.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        mark: Api = Api(UnitTestClient('/api'), 'MarkZuckerberg', True)
+        r = mark.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = mark.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 0)
+        r = anonymous.get_org_api(org_name).get_org()
+        self.assert_status_404(r)
+
+    def test_get_private_org_permission(self):
+        api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        org = self.generate_org(1, 'Private')
+        org_name = org['name']
+        api.get_user_api().create_org(org)
+        
+        bill: Api = Api(UnitTestClient('/api'), 'BillGates', True)
+        api.get_org_api(org_name).add_member('BillGates', 'Admin')
+        r = bill.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Collaborator')
+        r = bill.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        api.get_org_api(org_name).change_member_role('BillGates', 'Member')
+        r = bill.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = bill.get_org_api(org_name).get_org()
+        self.assert_status_200(r)
+
+        mark: Api = Api(UnitTestClient('/api'), 'MarkZuckerberg', True)
+        r = mark.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 0)
+        r = mark.get_org_api(org_name).get_org()
+        self.assert_status_404(r)
+
+        anonymous: Api = Api(UnitTestClient('/api'))
+        r = anonymous.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 0)
+        r = anonymous.get_org_api(org_name).get_org()
+        self.assert_status_404(r)

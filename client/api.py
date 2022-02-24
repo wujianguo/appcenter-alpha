@@ -8,6 +8,8 @@ class Api:
     class UserApi:
         def __init__(self, client, username=''):
             self.username = username
+            if not self.username:
+                self.username = client.username
             self.client = client
 
         def set_username(self, username):

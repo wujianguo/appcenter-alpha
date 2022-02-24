@@ -7,6 +7,8 @@ from django.test import Client
 class RequestsClient:
     def __init__(self, base_url):
         self.base_url = base_url
+        self.token = ''
+        self.username = ''
 
     def set_token(self, token):
         self.token = token
@@ -44,6 +46,7 @@ class DjangoTestClient:
     def __init__(self, base_url):
         self.base_url = base_url
         self.token = ''
+        self.username = ''
         self.client = Client()
 
     def set_token(self, token):
