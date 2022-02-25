@@ -50,20 +50,35 @@ class OrganizationList(APIView):
 
     def get(self, request):
         # order, filter, search
+        # {
+        #     "value": [],
+        #     "count": 30
+        # }
+        top = int(request.GET.get('top', 10))
+        skip = int(request.GET.get('skip', 0))
+        count = True if request.GET.get('count', 'false').lower() == 'true' else False
         if request.user.is_authenticated:
+            # todo
             allow_visibility = [VisibilityType.Public, VisibilityType.Internal]
-            q1 = Q(org__visibility__in=allow_visibility)
-            q2 = Q(user=request.user)
-            # # todo： an app has multi member
-            orgs = OrganizationUser.objects.filter(q1 | q2).prefetch_related('org')
-            # print('=======')
-            # for org in orgs:
-            #     print('{0}: {1}'.format(org.user.username, org.org.name))
-            serializer = UserOrganizationSerializer(orgs, many=True, context={'request': request})
+            orgs = Organization.objects.filter(visibility__in=allow_visibility)
+            user_orgs = OrganizationUser.objects.filter(user=request.user).prefetch_related('org')
+            def not_in_user_orgs(org):
+                return len(list(filter(lambda x: x.org.name==org.name, user_orgs))) == 0
+            orgs = filter(not_in_user_orgs, orgs)
+            data = OrganizationSerializer(orgs, many=True, context={'request': request}).data
+            user_orgs_data = UserOrganizationSerializer(user_orgs, many=True, context={'request': request}).data
+            data.extend(user_orgs_data)
+            data.sort(key=lambda d: d['name'])
+            resp = {
+                'value': data[skip: skip + top]
+            }
+            if count:
+                resp['count'] = len(data)
+            return Response(resp)
         else:
-            orgs = Organization.objects.filter(visibility=VisibilityType.Public)
+            orgs = Organization.objects.filter(visibility=VisibilityType.Public).order_by('name')[skip: top + skip]
             serializer = OrganizationSerializer(orgs, many=True, context={'request': request})
-        return Response(serializer.data)
+            return Response(serializer.data)
 
     @transaction.atomic
     def post(self, request):

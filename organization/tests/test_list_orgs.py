@@ -32,13 +32,14 @@ class OrganizationListTest(BaseTestCase):
         self.assert_status_200(r)
         self.assert_list_length(r, number)
 
-    def xtest_more_than_one_page(self):
+    def test_more_than_one_page(self):
         api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
+        anonymous: Api = Api(UnitTestClient('/api'))
         user_api = api.get_user_api()
         number = 36
         org_list = []
         for i in range(number):
-            org = self.generate_org(i)
+            org = self.generate_org(i, 'Public')
             org_list.append(org)
             r = user_api.create_org(org)
             self.assert_status_201(r)
@@ -47,31 +48,72 @@ class OrganizationListTest(BaseTestCase):
         self.assert_status_200(r)
         self.assert_list_length(r, 10)
         resp_org_list = self.get_resp_list(r)
+        r = anonymous.get_user_api().get_org_list()
+        self.assert_status_200(r)
+        self.assert_list_length(r, 10)
+        resp_org_list2 = self.get_resp_list(r)
         for i in range(10):
-            self.assertEqual(resp_org_list[i], org_list[i])
+            self.assert_partial_dict_equal(resp_org_list[i], org_list[i], ['name'])
+            self.assert_partial_dict_equal(resp_org_list2[i], org_list[i], ['name'])
             
         r = user_api.get_org_list(top=10, skip=10)
         self.assert_status_200(r)
         self.assert_list_length(r, 10)
         resp_org_list = self.get_resp_list(r)
+        r = anonymous.get_user_api().get_org_list(top=10, skip=10)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 10)
+        resp_org_list2 = self.get_resp_list(r)
         for i in range(10):
-            self.assertEqual(resp_org_list[i], org_list[i+10])
+            self.assert_partial_dict_equal(resp_org_list[i], org_list[i+10], ['name'])
+            self.assert_partial_dict_equal(resp_org_list2[i], org_list[i+10], ['name'])
 
-        r = user_api.get_org_list(top=20, skip=10)
+        r = user_api.get_org_list(top=10, skip=20)
         self.assert_status_200(r)
         self.assert_list_length(r, 10)
         resp_org_list = self.get_resp_list(r)
+        r = anonymous.get_user_api().get_org_list(top=10, skip=20)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 10)
+        resp_org_list2 = self.get_resp_list(r)
         for i in range(10):
-            self.assertEqual(resp_org_list[i], org_list[i+20])
+            self.assert_partial_dict_equal(resp_org_list[i], org_list[i+20], ['name'])
+            self.assert_partial_dict_equal(resp_org_list2[i], org_list[i+20], ['name'])
 
-        r = user_api.get_org_list(top=30, skip=10)
+        r = user_api.get_org_list(top=10, skip=30)
         self.assert_status_200(r)
         self.assert_list_length(r, 6)
         resp_org_list = self.get_resp_list(r)
+        r = anonymous.get_user_api().get_org_list(top=10, skip=30)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 6)
+        resp_org_list2 = self.get_resp_list(r)
         for i in range(6):
-            self.assertEqual(resp_org_list[i], org_list[i+30])
+            self.assert_partial_dict_equal(resp_org_list[i], org_list[i+30], ['name'])
+            self.assert_partial_dict_equal(resp_org_list2[i], org_list[i+30], ['name'])
 
-    def xtest_multi_org_multi_member(self):
+        r = user_api.get_org_list(top=10, skip=35)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+        r = anonymous.get_user_api().get_org_list(top=10, skip=35)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 1)
+
+        r = user_api.get_org_list(top=10, skip=36)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 0)
+        r = anonymous.get_user_api().get_org_list(top=10, skip=36)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 0)
+
+        r = user_api.get_org_list(top=10, skip=40)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 0)
+        r = anonymous.get_user_api().get_org_list(top=10, skip=40)
+        self.assert_status_200(r)
+        self.assert_list_length(r, 0)
+
+    def test_multi_org_multi_member(self):
         larry: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
         org1 = self.generate_org(1, 'Public')
         larry.get_user_api().create_org(org1)
@@ -93,6 +135,8 @@ class OrganizationListTest(BaseTestCase):
         bill.get_user_api().create_org(org14)
 
         mark: Api = Api(UnitTestClient('/api'), 'Mark', True)
+        org21 = self.generate_org(21, 'Public')
+        mark.get_user_api().create_org(org21)
 
         larry.get_org_api(org1['name']).add_member(bill.client.username, 'Member')
         larry.get_org_api(org2['name']).add_member(bill.client.username, 'Member')
@@ -104,17 +148,62 @@ class OrganizationListTest(BaseTestCase):
         bill.get_org_api(org12['name']).add_member(mark.client.username, 'Member')
 
         r = larry.get_user_api().get_org_list()
-        self.assert_list_length(r, 6)
-        
+        self.assert_list_length(r, 8)
+        resp_list = self.get_resp_list(r)
+        expect_org_info = {
+            org1['name']: 'Admin',
+            org2['name']: 'Admin',
+            org3['name']: 'Admin',
+            org4['name']: 'Admin',
+            org11['name']: 'Member',
+            org12['name']: 'Member',
+            org14['name']: None,
+            org21['name']: None
+        }
+        resp_org_info = dict([(org['name'], org.get('role', None)) for org in resp_list])
+        self.assertDictEqual(resp_org_info, expect_org_info)
+
         r = bill.get_user_api().get_org_list()
-        self.assert_list_length(r, 6)
+        self.assert_list_length(r, 8)
+        resp_list = self.get_resp_list(r)
+        expect_org_info = {
+            org11['name']: 'Admin',
+            org12['name']: 'Admin',
+            org13['name']: 'Admin',
+            org14['name']: 'Admin',
+            org1['name']: 'Member',
+            org2['name']: 'Member',
+            org4['name']: None,
+            org21['name']: None
+        }
+        resp_org_info = dict([(org['name'], org.get('role', None)) for org in resp_list])
+        self.assertDictEqual(resp_org_info, expect_org_info)
 
         r = mark.get_user_api().get_org_list()
-        self.assert_list_length(r, 5)
+        self.assert_list_length(r, 6)
+        resp_list = self.get_resp_list(r)
+        expect_org_info = {
+            org1['name']: None,
+            org4['name']: None,
+            org11['name']: 'Member',
+            org12['name']: 'Member',
+            org21['name']: 'Admin',
+            org14['name']: None
+        }
+        resp_org_info = dict([(org['name'], org.get('role', None)) for org in resp_list])
+        self.assertDictEqual(resp_org_info, expect_org_info)
 
         anonymous: Api = Api(UnitTestClient('/api'))
         r = anonymous.get_user_api().get_org_list()
-        self.assert_list_length(r, 2)
+        self.assert_list_length(r, 3)
+        resp_list = self.get_resp_list(r)
+        expect_org_info = {
+            org1['name']: None,
+            org11['name']: None,
+            org21['name']: None
+        }
+        resp_org_info = dict([(org['name'], org.get('role', None)) for org in resp_list])
+        self.assertDictEqual(resp_org_info, expect_org_info)
 
     def test_order_by(self):
         pass
@@ -122,7 +211,7 @@ class OrganizationListTest(BaseTestCase):
     def test_filter(self):
         pass
 
-    def xtest_get_public_org_permission(self):
+    def test_get_public_org_permission(self):
         api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
         org = self.generate_org(1, 'Public')
         org_name = org['name']
@@ -164,7 +253,7 @@ class OrganizationListTest(BaseTestCase):
         r = anonymous.get_org_api(org_name).get_org()
         self.assert_status_200(r)
 
-    def xtest_get_internal_org_permission(self):
+    def test_get_internal_org_permission(self):
         api: Api = Api(UnitTestClient('/api'), 'LarryPage', True)
         org = self.generate_org(1, 'Internal')
         org_name = org['name']

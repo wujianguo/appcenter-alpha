@@ -25,7 +25,7 @@ class OrganizationCreateTest(BaseTestCase):
         self.assertDictEqual(r.json(), r2.json())
 
         r3 = api.get_user_api().get_org_list()
-        self.assertDictEqual(r3.json()[0], r.json())
+        self.assertDictEqual(self.get_resp_list(r3)[0], r.json())
 
     def test_invalid_name(self):
         # 1. only letters, numbers, underscores or hyphens

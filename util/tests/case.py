@@ -44,7 +44,10 @@ class BaseTestCase(TestCase):
         self.assert_status(resp, 409)
 
     def assert_list_length(self, resp, length):
-        self.assertEqual(len(resp.json()), length)
+        if type(resp.json()) is list:
+            self.assertEqual(len(resp.json()), length)
+        else:
+            self.assertEqual(len(resp.json()['value']), length)
 
     def assert_partial_dict_equal(self, dict1, dict2, keys):
         dict11 = {}
@@ -55,7 +58,10 @@ class BaseTestCase(TestCase):
         self.assertDictEqual(dict11, dict22)
 
     def get_resp_list(self, r):
-        return r.json()['data']
+        if type(r.json()) is list:
+            return r.json()
+        else:
+            return r.json()['value']
 
     def google_org(self, visibility='Public'):
         return {
@@ -75,7 +81,7 @@ class BaseTestCase(TestCase):
 
     def generate_org(self, index, visibility='Public'):
         return {
-            "name": "generated_org_" + str(index),
+            "name": "generated_org_" + format(index, '05'),
             "display_name": "Generated Organization " + str(index),
             "visibility": visibility,
         }

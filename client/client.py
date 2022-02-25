@@ -62,7 +62,7 @@ class DjangoTestClient:
         return self.base_url + path
 
     def get(self, path, query=None):
-        return self.client.get(self.build_url(path), HTTP_AUTHORIZATION=self.token)
+        return self.client.get(self.build_url(path), data=query, HTTP_AUTHORIZATION=self.token)
 
     def post(self, path, body):
         content_type = 'application/json'
