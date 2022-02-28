@@ -214,9 +214,15 @@ class OrganizationCreateTest(BaseTestCase):
     def test_upload_icon(self):
         org_api = self.create_org()
 
+        r1 = org_api.get_icon()
+        self.assert_status_404(r1)
+
         r = org_api.change_or_set_icon()
         self.assert_status_200(r)
         self.assertNotEqual(r.json()['icon_file'], '')
+
+        r1 = org_api.get_icon()
+        self.assert_status_200(r)
 
         r2 = org_api.change_or_set_icon()
         self.assert_status_200(r2)

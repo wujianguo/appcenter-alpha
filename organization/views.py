@@ -1,6 +1,7 @@
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import Http404
+from django.urls import reverse
 from django.db.models import Q
 from django.contrib.auth.models import User
 from rest_framework import permissions, status
@@ -27,8 +28,10 @@ def viewer_query(user, org_name):
         return q1 & q2
 
 def check_org_view_permission(org_name, user):
-    if not OrganizationUser.objects.filter(viewer_query(user, org_name)).exists():
+    org_user = OrganizationUser.objects.filter(viewer_query(user, org_name))
+    if not org_user.exists():
         raise Http404
+    return org_user.first()
 
 def check_org_admin_permission(org_name, user):
     try:
@@ -68,13 +71,7 @@ class OrganizationList(APIView):
             data = OrganizationSerializer(orgs, many=True, context={'request': request}).data
             user_orgs_data = UserOrganizationSerializer(user_orgs, many=True, context={'request': request}).data
             data.extend(user_orgs_data)
-            data.sort(key=lambda d: d['name'])
-            resp = {
-                'value': data[skip: skip + top]
-            }
-            if count:
-                resp['count'] = len(data)
-            return Response(resp)
+            return Response(data[skip: skip + top])
         else:
             orgs = Organization.objects.filter(visibility=VisibilityType.Public).order_by('name')[skip: top + skip]
             serializer = OrganizationSerializer(orgs, many=True, context={'request': request})
@@ -96,7 +93,8 @@ class OrganizationList(APIView):
         data = serializer.data
         data['role'] = ChoiceField(choices=OrganizationUser.OrganizationUserRole.choices).to_representation(org_user.role)
         response = Response(data, status=status.HTTP_201_CREATED)
-        response['Location'] = request.build_absolute_uri('orgs/' + data['name'])
+        location = reverse('org-detail', args=(name,))
+        response['Location'] = request.build_absolute_uri(location)
         return response
 
 class OrganizationDetail(APIView):
@@ -138,12 +136,21 @@ class OrganizationDetail(APIView):
 
     def delete(self, request, org_name):
         user_org = check_org_admin_permission(org_name, request.user)
-        # todo: check users, delete related object
+        if Application.objects.filter(org=user_org.org).exists():
+            raise PermissionDenied
         user_org.org.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class OrganizationIcon(APIView):
     permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, org_name):
+        user_org = check_org_view_permission(org_name, request.user)
+        if not user_org.org.icon_file:
+            raise Http404
+        response = Response()
+        response['X-Accel-Redirect'] = user_org.org.icon_file.url
+        return response
 
     def post(self, request, org_name):
         user_org = check_org_admin_permission(org_name, request.user)
@@ -154,7 +161,11 @@ class OrganizationIcon(APIView):
         data = {
             'icon_file': request.build_absolute_uri(instance.icon_file.url)
         }
-        return Response(data)
+        # todo response no content
+        response = Response(data)
+        location = reverse('org-icon', args=(org_name,))
+        response['Location'] = request.build_absolute_uri(location)
+        return response
 
     def delete(self, request, org_name):
         user_org = check_org_admin_permission(org_name, request.user)
@@ -191,9 +202,10 @@ class OrganizationUserList(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             instance = OrganizationUser.objects.create(org=user_org.org, role=role, user=user)
             serializer = OrganizationUserSerializer(instance)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            response = Response(serializer.data, status=status.HTTP_201_CREATED)
+            location = reverse('org-user', args=(org_name, username))
+            response['Location'] = request.build_absolute_uri(location)
+            return response
 
 class OrganizationUserDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]

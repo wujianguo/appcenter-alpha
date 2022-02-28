@@ -3,7 +3,6 @@ from django.db import transaction
 from django.http import Http404
 from django.db.models import Q
 from django.contrib.auth.models import User
-from matplotlib import use
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView

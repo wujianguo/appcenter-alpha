@@ -4,7 +4,32 @@
 import requests
 from django.test import Client
 
-class RequestsClient:
+class BaseClient:
+    def __init__(self, base_url):
+        pass
+
+    def set_token(self, token):
+        pass
+
+    def set_username(self, username):
+        pass
+
+    def get(self, path, query=None):
+        pass
+
+    def post(self, path, body):
+        pass
+
+    def put(self, path, body):
+        pass
+
+    def delete(self, path):
+        pass
+
+    def upload_post(self, path, data):
+        pass
+
+class RequestsClient(BaseClient):
     def __init__(self, base_url):
         self.base_url = base_url
         self.token = ''
@@ -42,7 +67,7 @@ class RequestsClient:
         return requests.post(self.build_url(path), files=data, headers=self.headers())
 
 
-class DjangoTestClient:
+class DjangoTestClient(BaseClient):
     def __init__(self, base_url):
         self.base_url = base_url
         self.token = ''

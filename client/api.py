@@ -1,12 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import tempfile, PIL
+import tempfile, PIL, random
+from PIL import Image
+from client.client import BaseClient
+
+def generate_random_temp_image(size=(100, 100)):
+    image = Image.new('RGB', size=size)
+    pixels = image.load()
+    for x in range(image.size[0]):
+        for y in range(image.size[1]):
+            pixels[x, y] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    file = tempfile.NamedTemporaryFile(suffix='.jpg')
+    image.save(file)
+    return file
 
 class Api:
 
     class UserApi:
-        def __init__(self, client, username=''):
+        def __init__(self, client: BaseClient, username=''):
             self.username = username
             if not self.username:
                 self.username = client.username
@@ -104,9 +116,7 @@ class Api:
 
         def change_or_set_icon(self, icon_file_path=None):
             if icon_file_path is None:
-                image = PIL.Image.new('RGB', size=(1, 1))
-                file = tempfile.NamedTemporaryFile(suffix='.jpg')
-                image.save(file)
+                file = generate_random_temp_image()
                 file_path = file.name
             else:
                 file_path = icon_file_path
@@ -114,6 +124,9 @@ class Api:
             with open(file_path, 'rb') as fp:
                 data = {'icon_file': fp}
                 return self.client.upload_post(self.base_path + '/icon', data=data)
+
+        def get_icon(self):
+            return self.client.get(self.base_path + '/icon')
 
         def remove_icon(self):
             return self.client.delete(self.base_path + '/icon')

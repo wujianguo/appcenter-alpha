@@ -5,6 +5,22 @@ from django.contrib.auth.models import User
 from django.dispatch import receiver
 from application.models import Application
 
+
+# alpha, beta, production, ...
+# class DeploymentEnvironment(models.Model):
+#     app = models.ForeignKey(UniversalApp, on_delete=models.CASCADE)
+#     name = models.SlugField(max_length=32)
+#     key = models.UUIDField(default=uuid.uuid4)
+
+# @receiver(post_save, sender=Application)
+# def notify_app_save(sender, instance, created, **kwargs):
+#     if not created:
+#         return
+#     DeploymentEnvironment.objects.bulk_create([
+#         DeploymentEnvironment(app=instance, name='alpha'),
+#         DeploymentEnvironment(app=instance, name='prod')
+#     ])
+
 # staging, production, ...
 class ReleaseDeploymentKey(models.Model):
     app = models.ForeignKey(Application, on_delete=models.CASCADE)
